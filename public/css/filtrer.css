@@ -1,0 +1,17 @@
+/* ============================================================
+   FILTRER PAGE - Styles spécifiques
+============================================================ */
+
+.filter-group h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-body);
+}
+
+.filter-field[style*="margin-top"] {
+    margin-top: 0.6rem;
+}

@@ -1,0 +1,78 @@
+/* ============================================================
+   TABLEAU CANDIDATS
+============================================================ */
+
+#tableau-candidats {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+#tableau-candidats thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#tableau-candidats thead tr {
+    border-bottom: 1.5px solid #185FA5;
+    border-color: black;
+}
+
+#tableau-candidats th {
+    padding: 13px 16px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #185FA5;
+    background: #E6F1FB;
+    white-space: nowrap;
+    border-color: black;
+    border: 1px solid black;
+}
+
+#tableau-candidats td {
+    padding: 13px 16px;
+    color: var(--black);
+    border-bottom: 0.5px solid var(--border-s);
+    white-space: nowrap;
+    border-color: black;
+    border: 1px solid black;
+}
+
+#tableau-candidats tbody tr:last-child td {
+    border-bottom: none;
+}
+
+#tableau-candidats tbody tr:hover td {
+    background: #E6F1FB;
+}
+
+/* Correction zone Année */
+#annee-select {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.card .stat-item {
+    width: 100%;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hero-sub {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.btn-group-right {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+}

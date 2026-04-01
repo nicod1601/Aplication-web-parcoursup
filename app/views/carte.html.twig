@@ -1,0 +1,24 @@
+{% include '_template/header.html.twig' with {
+  title: title | default('MonProjet'),
+  project_name: project_name | default('MonProjet')
+} %}
+
+<main>
+
+</main>
+
+<script>
+	const menuItems = document.querySelectorAll('.menu-item');
+	menuItems[1].classList.add('active');
+
+	menuItems.forEach(item => {
+		item.addEventListener('click', () => {
+			menuItems.forEach(i => i.classList.remove('active'));
+			item.classList.add('active');
+
+			const page = item.getAttribute('href').substring(1);
+			window.location.href = `../../public/${page}`;
+
+		});
+	});
+</script>
