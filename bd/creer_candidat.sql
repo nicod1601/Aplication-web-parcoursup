@@ -37,14 +37,14 @@ create table Etablissement (
 
 -- Création de la table Formation
 create table Formation (
-	idFormation  int            primary key,
-	libFormation varchar(200)   not null
+	idFormation  serial          primary key,
+	libFormation varchar(200)   not null unique
 );
 
 -- Création de la table Filiere
 create table Filiere (
-	idFiliere   int             primary key,
-	libFiliere  varchar(200)    not null
+	idFiliere   serial          primary key,
+	libFiliere  varchar(200)    not null unique
 );
 
 -- Création de la table TypeDiplome
@@ -56,7 +56,7 @@ create table TypeDiplome (
 -- Création de la table Specialite
 create table Specialite (
 	idSpe       serial          primary key,
-	libSpe      varchar(150)    not null
+	libSpe      varchar(150)    not null unique
 );
 
 -- Création de la table EnseignementSpecialite

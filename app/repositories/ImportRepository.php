@@ -23,11 +23,13 @@ class ImportRepository
 			$pdo = Repository::getInstance()->getPDO();
 			$pdo->beginTransaction();
 
-			$locMap   = [];
-			$etabMap  = [];
-			$serieMap = [];
-			$speMap   = [];
-			$ensMap   = [];
+			$locMap    = [];
+			$etabMap   = [];
+			$serieMap  = [];
+			$speMap    = [];
+			$ensMap    = [];
+			$filiereMap  = [];
+			$formationMap = [];
 
 			$maxIdCand = (int)$pdo->query("SELECT COALESCE(MAX(idCand), 0) FROM Candidat")->fetchColumn();
 			$candCounter = $maxIdCand + 1;
@@ -35,34 +37,44 @@ class ImportRepository
 			$locCounter  = (int)$pdo->query("SELECT COALESCE(MAX(idLoc), 0)  FROM Localisation")->fetchColumn() + 1;
 			$etabCounter = (int)$pdo->query("SELECT COALESCE(MAX(idEtab), 0) FROM Etablissement")->fetchColumn() + 1;
 
+			// ---- Statements ----
+
 			$stmtLocalisation = $pdo->prepare("
-				INSERT INTO Localisation (idLoc, nomCommu, nomDept, pays) 
+				INSERT INTO Localisation (idLoc, nomCommu, nomDept, pays)
 				VALUES (:idLoc, :nomCommu, :nomDept, :pays)
 				ON CONFLICT (idLoc) DO NOTHING
 			");
 
 			$stmtEtablissement = $pdo->prepare("
-				INSERT INTO Etablissement (idEtab, nomEtab, codePost, idLoc) 
+				INSERT INTO Etablissement (idEtab, nomEtab, codePost, idLoc)
 				VALUES (:idEtab, :nomEtab, :codePost, :idLoc)
 				ON CONFLICT (idEtab) DO NOTHING
 			");
 
 			$stmtTypeDiplome = $pdo->prepare("
-				INSERT INTO TypeDiplome (idTypeDip, libTypeDip) 
+				INSERT INTO TypeDiplome (idTypeDip, libTypeDip)
 				VALUES (:idTypeDip, :libTypeDip)
 				ON CONFLICT (idTypeDip) DO NOTHING
 			");
 
+			// Formation : pas de code dans l'Excel, on utilise le libellé comme clé unique (serial en base)
 			$stmtFormation = $pdo->prepare("
-				INSERT INTO Formation (idFormation, libFormation) 
-				VALUES (:idFormation, :libFormation)
-				ON CONFLICT (idFormation) DO NOTHING
+				INSERT INTO Formation (libFormation)
+				VALUES (:libFormation)
+				ON CONFLICT DO NOTHING
+			");
+			$stmtGetFormation = $pdo->prepare("
+				SELECT idFormation FROM Formation WHERE libFormation = :libFormation
 			");
 
+			// Filière : même approche
 			$stmtFiliere = $pdo->prepare("
-				INSERT INTO Filiere (idFiliere, libFiliere) 
-				VALUES (:idFiliere, :libFiliere)
-				ON CONFLICT (idFiliere) DO NOTHING
+				INSERT INTO Filiere (libFiliere)
+				VALUES (:libFiliere)
+				ON CONFLICT DO NOTHING
+			");
+			$stmtGetFiliere = $pdo->prepare("
+				SELECT idFiliere FROM Filiere WHERE libFiliere = :libFiliere
 			");
 
 			$stmtSerieDiplome = $pdo->prepare("
@@ -70,30 +82,44 @@ class ImportRepository
 				VALUES (:codeSerieDip, :libSerieDip)
 				ON CONFLICT (codeSerieDip) DO NOTHING
 			");
-
 			$stmtGetSerieDiplome = $pdo->prepare("
 				SELECT idSerieDip FROM SerieDiplome WHERE codeSerieDip = :codeSerieDip
 			");
 
+			$stmtSpecialite = $pdo->prepare("
+				INSERT INTO Specialite (libSpe) VALUES (:libSpe) ON CONFLICT DO NOTHING
+			");
+			$stmtGetSpe = $pdo->prepare("SELECT idSpe FROM Specialite WHERE libSpe = :libSpe");
+
+			$stmtEnsSpe = $pdo->prepare("
+				INSERT INTO EnseignementSpecialite (libEnsSpe) VALUES (:libEnsSpe) ON CONFLICT DO NOTHING
+			");
+			$stmtGetEns = $pdo->prepare("SELECT idEnsSpe FROM EnseignementSpecialite WHERE libEnsSpe = :libEnsSpe");
+
+
 			$stmtCandidat = $pdo->prepare("
 				INSERT INTO Candidat (
 					idCand, codeCand, nomCand, prenomCand, civilite, profilCand,
-					nvBoursCand, noteGlobale, noteFicheAvenir, noteLycee,
-					anneeDeb, anneeFin, idFormation, idFiliere, idTypeDip, idSerieDip, idSpe, idEtab
-				) 
+					nvBoursCand, noteGlobale, noteFicheAvenir, noteLycee, noteDossier,
+					anneeDeb, anneeFin, commentaire,
+					idFormation, idFiliere, idTypeDip, idSerieDip, idSpe, idEtab
+				)
 				VALUES (
 					:idCand, :codeCand, :nomCand, :prenomCand, :civilite, :profilCand,
-					:nvBoursCand, :noteGlobale, :noteFicheAvenir, :noteLycee,
-					:anneeDeb, :anneeFin, :idFormation, :idFiliere, :idTypeDip, :idSerieDip, :idSpe, :idEtab
+					:nvBoursCand, :noteGlobale, :noteFicheAvenir, :noteLycee, :noteDossier,
+					:anneeDeb, :anneeFin, :commentaire,
+					:idFormation, :idFiliere, :idTypeDip, :idSerieDip, :idSpe, :idEtab
 				)
 				ON CONFLICT (idCand) DO UPDATE SET nomCand = EXCLUDED.nomCand
 			");
 
 			$stmtCandEnsSpecialite = $pdo->prepare("
-				INSERT INTO Candidat_EnseignementSpecialite (idCand, idEnsSpe, abandonnee) 
+				INSERT INTO Candidat_EnseignementSpecialite (idCand, idEnsSpe, abandonnee)
 				VALUES (:idCand, :idEnsSpe, :abandonnee)
 				ON CONFLICT (idCand, idEnsSpe) DO NOTHING
 			");
+
+			// ---- Boucle sur chaque ligne Excel ----
 
 			foreach ($excelData as $row) {
 
@@ -136,17 +162,31 @@ class ImportRepository
 				$stmtTypeDiplome->execute([':idTypeDip' => $idTypeDip, ':libTypeDip' => $libTypeDip]);
 
 				// 4. Formation
-				$idFormation  = (int)($row['Formation - Code']    ?? 0);
-				$libFormation =       $row['Formation - Libellé'] ?? 'Inconnue';
-				$stmtFormation->execute([':idFormation' => $idFormation, ':libFormation' => $libFormation]);
+				// CORRECTION : la colonne Excel s'appelle 'Formation - Libellé (Saisie manuelle) 2024/2025'
+				//              il n'existe pas de 'Formation - Code' dans le fichier
+				$libFormation = $row['Formation - Libellé (Saisie manuelle) 2024/2025'] ?? 'Inconnue';
+				if (!isset($formationMap[$libFormation])) {
+					$stmtFormation->execute([':libFormation' => $libFormation]);
+					$stmtGetFormation->execute([':libFormation' => $libFormation]);
+					$formationMap[$libFormation] = (int)$stmtGetFormation->fetchColumn();
+				}
+				$idFormation = $formationMap[$libFormation];
 
 				// 5. Filière
-				$idFiliere  = (int)($row['Filière - Code']    ?? 0);
-				$libFiliere =       $row['Filière - Libellé'] ?? 'Inconnue';
-				$stmtFiliere->execute([':idFiliere' => $idFiliere, ':libFiliere' => $libFiliere]);
+				// CORRECTION : la colonne Excel s'appelle 'Filiere (pour scolarité du supérieur)- Libellé 2024/2025'
+				//              il n'existe pas de 'Filière - Code' dans le fichier
+				$libFiliere = $row['Filiere (pour scolarité du supérieur)- Libellé 2024/2025'] ?? 'Inconnue';
+				if (!isset($filiereMap[$libFiliere])) {
+					$stmtFiliere->execute([':libFiliere' => $libFiliere]);
+					$stmtGetFiliere->execute([':libFiliere' => $libFiliere]);
+					$filiereMap[$libFiliere] = (int)$stmtGetFiliere->fetchColumn();
+				}
+				$idFiliere = $filiereMap[$libFiliere];
 
-				// 6. Spécialité (idSpe généré automatiquement via serial)
-				$libSpe = $row['Spécialité - Libellé'] ?? 'Inconnue';
+				// 6. Spécialité
+				// CORRECTION : la colonne Excel s'appelle 'Spécialité / Mention - Libellé  2024/2025'
+				//              (pas 'Spécialité - Libellé' qui correspond à autre chose)
+				$libSpe = $row['Spécialité / Mention - Libellé  2024/2025'] ?? 'Inconnue';
 				if (!isset($speMap[$libSpe])) {
 					$pdo->prepare("
 						INSERT INTO Specialite (libSpe)
@@ -154,15 +194,13 @@ class ImportRepository
 						ON CONFLICT DO NOTHING
 					")->execute([':libSpe' => $libSpe]);
 
-					$stmtGetSpe = $pdo->prepare("
-						SELECT idSpe FROM Specialite WHERE libSpe = :libSpe
-					");
+					$stmtGetSpe = $pdo->prepare("SELECT idSpe FROM Specialite WHERE libSpe = :libSpe");
 					$stmtGetSpe->execute([':libSpe' => $libSpe]);
 					$speMap[$libSpe] = (int)$stmtGetSpe->fetchColumn();
 				}
 				$idSpe = $speMap[$libSpe];
 
-				// 7. Enseignement Spécialité (idEnsSpe généré automatiquement via serial)
+				// 7. Enseignement Spécialité
 				$libEnsSpe = $row['Combinaison des enseignements de spécialité en Terminale'] ?? 'Inconnu';
 				if (!isset($ensMap[$libEnsSpe])) {
 					$pdo->prepare("
@@ -171,9 +209,7 @@ class ImportRepository
 						ON CONFLICT DO NOTHING
 					")->execute([':libEnsSpe' => $libEnsSpe]);
 
-					$stmtGetEns = $pdo->prepare("
-						SELECT idEnsSpe FROM EnseignementSpecialite WHERE libEnsSpe = :libEnsSpe
-					");
+					$stmtGetEns = $pdo->prepare("SELECT idEnsSpe FROM EnseignementSpecialite WHERE libEnsSpe = :libEnsSpe");
 					$stmtGetEns->execute([':libEnsSpe' => $libEnsSpe]);
 					$ensMap[$libEnsSpe] = (int)$stmtGetEns->fetchColumn();
 				}
@@ -194,6 +230,7 @@ class ImportRepository
 				$idSerieDip = $serieMap[$codeSerieDip];
 
 				// 9. Candidat
+				// CORRECTION : noteDossier et commentaire ajoutés (présents dans l'Excel et en base)
 				$currentCandId = $candCounter++;
 				$stmtCandidat->execute([
 					':idCand'          => $currentCandId,
@@ -206,19 +243,25 @@ class ImportRepository
 					':noteGlobale'     => (float) ($row['Note Globale Calculée']     ?? 0),
 					':noteFicheAvenir' => (float) ($row['Note Fiche Avenir']         ?? 0),
 					':noteLycee'       => (float) ($row['Note Lycée calculée']       ?? 0),
+					':noteDossier'     => isset($row['Note Dossier']) && $row['Note Dossier'] !== '' ? (float)$row['Note Dossier'] : null,
+					':commentaire'     => $row['Commentaire'] ?? null,
 					':anneeDeb'        => $anneeDeb,
 					':anneeFin'        => $anneeFin,
-					':idFormation'     => $idFormation,
-					':idFiliere'       => $idFiliere,
+					':idFormation'     => $idFormation ?: null,
+					':idFiliere'       => $idFiliere   ?: null,
 					':idTypeDip'       => $idTypeDip,
 					':idSerieDip'      => $idSerieDip,
-					':idSpe'           => $idSpe,
+					':idSpe'           => $idSpe       ?: null,
 					':idEtab'          => $idEtab,
 				]);
 
 				// 10. Candidat_EnseignementSpecialite
-				$abandonneeCode = $row['Abandonnée - Code'] ?? '0';
-				$abandonnee = ($abandonneeCode === '1' || $abandonneeCode === true || $abandonneeCode === 1);
+				// CORRECTION : la colonne 'Abandonnée - Code' n'existe pas dans l'Excel.
+				//              La colonne réelle est 'Enseignement De spécialité abandonné en Première'
+				//              qui contient le libellé de la spécialité abandonnée (ou vide si aucune).
+				$abandonneeLib = $row['Enseignement De spécialité abandonné en Première'] ?? '';
+				$abandonnee = !empty(trim((string)$abandonneeLib));
+
 				$stmtCandEnsSpecialite->execute([
 					':idCand'     => $currentCandId,
 					':idEnsSpe'   => $idEnsSpe,
