@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Connexion | Plateforme Étudiante</title>
+	<link href="/css/connexion.css" rel="stylesheet">
+</head>
+<body>
+<div class="background-container">
+
+	<div class="connexion-card">
+		<h1>Connexion</h1>
+		<p class="subtitle">Accédez à votre Interface de la Tableau</p>
+
+		<form action="/connexion" method="post">
+
+			<div class="input-group">
+				<label for="email">Identifiant</label>
+				<input type="email" id="email" name="email" placeholder="nom@exemple.com" required>
+			</div>
+
+			<div class="input-group">
+				<label for="password">Mot de passe</label>
+				<input type="password" id="password" name="password" placeholder="••••••••" required>
+			</div>
+
+			<div class="options-row">
+				<label class="checkbox-container">
+					<input type="checkbox" name="remember">
+					<span class="checkmark"></span>
+					Rester connecté
+				</label>
+			</div>
+
+			<button type="submit" class="btn-connect" id="connect">Se connecter</button>
+		</form>
+
+		<div class="card-footer">
+			<p>Pas de compte ? <a href="/contact">Contactez l'administration</a></p>
+		</div>
+
+	</div>
+</div>
+
+<script src="/js/connexion.js"></script>
+</body>
+</html>

@@ -31,8 +31,8 @@ class ConnexionController extends Controller
 
 			if (session_status() === PHP_SESSION_NONE) session_start();
 
-			$_SESSION['user_id'] = $user->getId();
 			$_SESSION['user_nom'] = $user->getNomCompte();
+            $_SESSION['user_prenom'] = $user->getPrenomCompte();
 			$_SESSION['is_admin'] = $user->isAdmin();
 
 			$this->json(['success' => true]);

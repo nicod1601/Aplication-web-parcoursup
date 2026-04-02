@@ -12,6 +12,8 @@ abstract class Controller {
 			'debug' => true,
 		]);
 
+        $twig->addGlobal('session', $_SESSION);
+
 		http_response_code($status);
 		echo $twig->render($viewName . '.html.twig', array_merge($data, [
 			'title' => $title,

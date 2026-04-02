@@ -1,6 +1,8 @@
 <?php
 require_once '../app/core/Repository.php';
 
+set_time_limit( 900 );
+
 class ImportRepository
 {
 	public function getAllDataFromExcel()

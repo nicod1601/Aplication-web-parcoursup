@@ -36,4 +36,46 @@ class CandidatRepository
 
 		return $total;
 	}
+
+    public function getNbGenresFromAnnee($anneeDeb, $anneeFin): ?array
+    {
+        $stmtGenre = $this->pdo->prepare("
+			SELECT civilite, COUNT(*) AS total
+			FROM candidat
+			WHERE anneeDeb = ? AND anneeFin = ?
+			GROUP BY civilite
+		");
+        $stmtGenre->execute([$anneeDeb, $anneeFin]);
+        $genres = $stmtGenre->fetchAll(PDO::FETCH_ASSOC);
+
+        return $genres;
+    }
+
+    public function getGenresFromAnnee($anneeDeb, $anneeFin): ?array
+    {
+        $stmtCivilite = $this->pdo->prepare("
+            SELECT DISTINCT civilite
+            FROM Candidat
+            WHERE anneeDeb = ? AND anneeFin = ?
+            ORDER BY civilite ASC
+        ");
+        $stmtCivilite->execute([$anneeDeb, $anneeFin]);
+        $civilites = $stmtCivilite->fetchAll(PDO::FETCH_ASSOC);
+
+        return $civilites;
+    }
+
+    public function getNiveauxBourseFromAnnee($anneeDeb, $anneeFin): ?array
+    {
+        $stmtCivilite = $this->pdo->prepare("
+            SELECT DISTINCT nvBoursCand
+            FROM Candidat
+            WHERE anneeDeb = ? AND anneeFin = ?
+            ORDER BY nvBoursCand ASC
+        ");
+        $stmtCivilite->execute([$anneeDeb, $anneeFin]);
+        $nvBourse = $stmtCivilite->fetchAll(PDO::FETCH_ASSOC);
+
+        return $nvBourse;
+    }
 }

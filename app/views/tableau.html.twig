@@ -17,12 +17,12 @@
 			</div>
 			<div id='card-diplome' class="ligne">
 				{# ZONE Diplôme #}
-					<div class="stat-item">
-						<h2>-</h2>
-						<p>-</p>
-					</div>
 				<div class="stat-item">
-					<h2 >-</h2>
+					<h2>-</h2>
+					<p>-</p>
+				</div>
+				<div class="stat-item">
+					<h2>-</h2>
 					<p>-</p>
 				</div>
 				<div class="stat-item">
@@ -108,26 +108,34 @@
 		<div class="hero-sub">
 			<span>TABLEAU</span>
 			<div class="btn-group-right">
-				<button class="btn btn-secondary mb-3">Filtrer</button>
-				<button class="btn btn-secondary mb-3" id="btnGrouper">Grouper</button>
-				<button class="btn btn-primary mb-3">Exporter en CSV</button>
+				<button id="btnFiltrer" class="btn btn-secondary mb-3">Filtrer</button>
+				<button id="btnGrouper" class="btn btn-secondary mb-3">Grouper</button>
+				<button id="btnExporter" class="btn btn-primary mb-3">Exporter en CSV</button>
 			</div>
 		</div>
 
 		{# Exemple de contenu #}
 		<div class="content-placeholder">
 			<table id='tableau-candidats' class="table table-striped">
-
+				<thead>
+				<td>Code du candidat</td>
+				<td>Nom du candidat</td>
+				<td>Prénom du candidat</td>
+				<td>Civilité du candidat</td>
+				<td>Profil du candidat</td>
+				</thead>
+				<tbody id="tableau-data">
+				<tr>
+					<td colspan="100" style="text-align:center; padding: 30px; color: gray; font-style: italic;">
+						📭 Aucune donnée à afficher — importez un fichier Excel
+					</td>
+				</tr>
+				</tbody>
 			</table>
 		</div>
 	</section>
 </main>
 </div>
-
-
-
-
-
 <script>
 	const menuItems = document.querySelectorAll('.menu-item');
 	menuItems[2].classList.add('active');

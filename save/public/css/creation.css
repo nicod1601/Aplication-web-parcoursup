@@ -1,0 +1,129 @@
+/* ============================================================
+   CRÉATION DE COMPTE PAGE - Styles spécifiques
+============================================================ */
+
+/* Tab Navigation */
+.tab-button {
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 10px 20px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-button.active {
+    color: var(--navy);
+    border-bottom-color: var(--red);
+}
+
+.tab-button:hover {
+    color: var(--navy);
+}
+
+/* Password Generator Button */
+.btn-password-generate {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.btn-password-generate:hover {
+    background: #a01249;
+}
+
+/* Table Styles */
+.accounts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.accounts-table thead tr {
+    background: var(--blue-light);
+    border-bottom: var(--border-s);
+}
+
+.accounts-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--navy);
+}
+
+.accounts-table tbody tr {
+    border-bottom: var(--border-s);
+}
+
+.accounts-table td {
+    padding: 12px;
+    color: var(--black);
+}
+
+/* Pagination */
+.pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+}
+
+.pagination-wrapper .btn-outline {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+}
+
+.pagination-wrapper .btn-outline.active {
+    background: var(--navy);
+    color: var(--white);
+}
+
+.pagination-wrapper .btn-outline.page-number {
+    padding: 5px 12px;
+}
+
+.pagination-ellipsis {
+    color: var(--muted);
+}
+
+/* Card Spacing */
+.card-lg + .card-lg {
+    margin-top: 2rem;
+}
+
+/* Tab Container */
+.tabs-container {
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--blue-light);
+}
+
+/* Table Container */
+.table-container {
+    padding: 1.5rem;
+}
+
+/* Action Button Container */
+.action-button-center {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.action-button-center .btn-primary {
+    padding: 10px 24px;
+}

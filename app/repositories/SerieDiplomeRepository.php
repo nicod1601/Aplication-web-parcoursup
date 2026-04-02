@@ -11,7 +11,7 @@ class SerieDiplomeRepository
 		$this->pdo = Repository::getInstance()->getPDO();
 	}
 
-	public function getSeriesDiplomesFromAnnee($anneeDeb, $anneeFin): ?array
+	public function getNbSeriesDiplomesFromAnnee($anneeDeb, $anneeFin): ?array
 	{
 		// Stats des différents diplômes
 		$stmtDiplome = $this->pdo->prepare("
@@ -23,8 +23,24 @@ class SerieDiplomeRepository
 			GROUP BY serDip.codeSerieDip
 		");
 		$stmtDiplome->execute([$anneeDeb, $anneeFin]);
-		$diplomes = $stmtDiplome->fetchAll(PDO::FETCH_ASSOC);
+		$nbDiplomes = $stmtDiplome->fetchAll(PDO::FETCH_ASSOC);
 
-		return $diplomes;
+		return $nbDiplomes;
 	}
+
+    public function getCodeSeriesDiplomesFromAnnee($anneeDeb, $anneeFin): ?array
+    {
+        $stmtDiplome = $this->pdo->prepare("
+        	SELECT DISTINCT serDip.codeSerieDip
+			FROM Candidat AS cand
+				 INNER JOIN
+				 SerieDiplome AS serDip ON serDip.idSerieDip = cand.idSerieDip
+			WHERE cand.anneeDeb = ? AND cand.anneeFin = ?
+			ORDER BY serDip.codeSerieDip ASC
+        ");
+        $stmtDiplome->execute([$anneeDeb, $anneeFin]);
+        $codeDiplomes = $stmtDiplome->fetchAll(PDO::FETCH_ASSOC);
+
+        return $codeDiplomes;
+    }
 }

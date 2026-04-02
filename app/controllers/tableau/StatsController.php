@@ -22,6 +22,14 @@ class StatsController extends Controller
 		$data["candidats"]    = $this->statsService->getCandidatsFromAnnee($anneeDeb, $anneeFin);
 		$data["statistiques"] = $this->statsService->getStatistiques($anneeDeb, $anneeFin);
 
+        /* Mise à jour de la session */
+        $_SESSION['anneeCourante'] = [
+            "anneeDeb" => $anneeDeb,
+            "anneeFin" => $anneeFin
+        ];
+        $_SESSION['candidats']    = $data["candidats"   ];
+        $_SESSION['statistiques'] = $data["statistiques"];
+
 		$this->json($data);
 	}
 }

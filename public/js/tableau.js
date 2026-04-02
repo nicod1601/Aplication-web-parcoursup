@@ -1,133 +1,236 @@
-const anneeSelect = document.getElementById('annee-select');
-const btnAnnee    = document.getElementById('btnAnnee');
+const anneeSelect= document.getElementById( 'annee-select' );
+const btnAnnee   = document.getElementById( 'btnAnnee'     );
 
-// ---- État global ----
-let groupesCache = null; // stockage temporaire en mémoire (sessionStorage aussi utilisé)
+const btnFiltrer = document.getElementById( 'btnFiltrer' );
+
+let groupeCache = null;
 let modeGrouper  = false;
 
-tableauVide();
+window.addEventListener( 'load', async () => {
+	try
+	{
+		/* Mise à jour des années de promotion disponibles */
+		const reponse = await fetch(`/loadTableau.php`);
 
-// ============================================================
-// INITIALISATION
-// ============================================================
+		if (! reponse.ok )
+			throw new Error(`Erreur lors du chargement de la page`);
 
-function tableauVide() {
-	const placeholder = document.querySelector('.content-placeholder');
-	placeholder.innerHTML = `
-		<table id="tableau-candidats" class="table table-striped"></table>
-		<p id="msg-vide" style="text-align:center; padding:30px; color:gray; font-style:italic; font-size:1.2em;">
-			Aucune donnée à afficher
-		</p>
-	`;
-}
-
-window.addEventListener('load', async () => {
-	try {
-		const reponse = await fetch('/loadTableau.php');
-		if (!reponse.ok) throw new Error('Erreur chargement');
 		const data = await reponse.json();
 		mettreAJourPage(data);
 
-		// Si des groupes étaient déjà en session, on les restaure
+
 		const cached = sessionStorage.getItem('groupes_cache');
 		if (cached) {
-			groupesCache = JSON.parse(cached);
+			groupeCache = JSON.parse(cached);
 		}
-	} catch (error) {
-		console.error('Erreur initialisation:', error);
-		alert('Impossible de se connecter au serveur.');
-	}
-});
-
-// ============================================================
-// SÉLECTION ANNÉE
-// ============================================================
-
-btnAnnee.addEventListener('click', async () => {
-	const annee = anneeSelect.value;
-	modeGrouper  = false;
-	groupesCache = null;
-	sessionStorage.removeItem('groupes_cache');
-
-	try {
-		const reponse = await fetch(`/stats.php?annee=${encodeURIComponent(annee)}`, {
-			method: 'GET',
+		/* Gestion des filtres */
+		/*
+		const reponseFiltre = await fetch('/filtrer.php', {
+			method: 'POST',
 			headers: {
 				'Authorization': 'Bearer appli-secret-token',
 				'Content-Type': 'application/json'
-			}
+			},
+			body: JSON.stringify(filtres)
 		});
-		if (!reponse.ok) throw new Error('Erreur chargement stats');
-		const data = await reponse.json();
 
-		mettreAJourStats(data.statistiques);
-		mettreAJourTab(data.candidats);
-	} catch (error) {
-		console.error('Erreur stats:', error);
-		alert('Impossible de charger les données.');
+		if ( ! reponseFiltre.ok)
+			throw new Error(`Erreur lors du chargement des filtres`);
+
+		const dataFiltre = await reponse.json();
+		mettreAJourTab(dataFiltre.candidats);
+		*/
+
+		/* Gestion des statistiques lors d'un retour sur la page */
+		/* ... */
+	}
+	catch (error)
+	{
+		console.error('Erreur lors du chargement de la page :', error);
+		alert('Erreur lors du chargement de la page');
 	}
 });
 
-// ============================================================
-// BOUTON GROUPER
-// ============================================================
+btnAnnee.addEventListener( 'click', async  () => {
+	const annee = document.getElementById( 'annee-select' ).value;
 
-const btnGrouper = document.getElementById('btnGrouper');
-	btnGrouper.addEventListener('click', async () => {
-		const annee = anneeSelect.value;
+	modeGrouper  = false;
+	groupeCache = null;
+	sessionStorage.removeItem('groupes_cache');
 
-		if (!annee || annee === 'null') {
-			alert('Veuillez d\'abord sélectionner une année et valider.');
-			return;
-		}
-
-		// Si les groupes sont déjà en cache pour cette année, on bascule l'affichage
-		if (groupesCache && groupesCache.annee === annee) {
-			modeGrouper = !modeGrouper;
-			if (modeGrouper) {
-				afficherGroupes(groupesCache.groupes);
-			} else {
-				// Retour au tableau normal
-				btnAnnee.click();
+	try
+	{
+		const reponse = await fetch(`/stats.php?annee=${encodeURIComponent(annee)}`, {
+			method: 'GET',
+			headers: {
+				'Authorization': `Bearer appli-secret-token`,
+				'Content-Type': 'application/json'
 			}
-			return;
-		}
+		});
 
-		try {
-			const overlay = document.getElementById('loading-overlay');
+		if ( ! reponse.ok )
+			throw new Error(`Erreur lors du chargement des données`);
 
-			// Appel API
-			const reponse = await fetch(`/groupes.php?annee=${encodeURIComponent(annee)}`);
-			if (!reponse.ok) throw new Error('Erreur chargement groupes');
-			const data = await reponse.json();
+		const data = await reponse.json();
 
-			if (!data.success) {
-				alert('Erreur : ' + data.error);
-				return;
-			}
 
-			// Stockage temporaire (mémoire + sessionStorage)
-			groupesCache = { annee: annee, groupes: data.groupes };
-			sessionStorage.setItem('groupes_cache', JSON.stringify(groupesCache));
+		sessionStorage.removeItem( 'statistiques' );
+		mettreAJourStats( data.statistiques );
+		sessionStorage.setItem( 'statistiques', JSON.stringify(data.statistiques) );
 
-			modeGrouper = true;
-			afficherGroupes(data.groupes);
+		sessionStorage.removeItem( 'candidats' );
+		mettreAJourTab( data.candidats );
+		sessionStorage.setItem( 'candidats', JSON.stringify(data.candidats) );
+	}
+	catch (error)
+	{
+		console.error('Erreur lors de l\'initialisation:', error);
+		alert('Impossible de se connecter au serveur. Assurez-vous que le backend est lancé sur http://localhost:8000');
+	}
+});
 
-		} catch (error) {
-			console.error('Erreur grouper:', error);
-			alert('Impossible de charger les groupes.');
-		}
+btnFiltrer.addEventListener( 'click', () => {
+	window.location.href = `../filtrer.php`;
+})
+
+async function mettreAJourPage(data)
+{
+	if ( ! data.annees ) return;
+
+
+	anneeSelect.innerHTML = ``;
+
+	data.annees.forEach(annee => {
+		anneeSelect.innerHTML += `<option value="${annee.value}">${annee.value}</option>`;
 	});
 
-// ============================================================
-// AFFICHAGE DES GROUPES
-// ============================================================
+	btnAnnee.disabled = false;
+}
+
+async function mettreAJourStats( statistiques )
+{
+	const cardDiplome = document.getElementById( 'card-diplome' );
+	const cardGenre   = document.getElementById( 'card-genre'   );
+	const nbCandTotal = document.getElementById( 'nbCandTotal'  );
+
+	// Nombre total de candidat(s) importé(s)
+	nbCandTotal.textContent = statistiques.totalCand;
+
+	// Mise à jour de la section sur les diplômes
+	const tabDiplome = {};
+	cardDiplome.innerHTML = ``;
+	statistiques.diplomes.forEach(d => {
+		tabDiplome[d.codeseriedip] = d.total
+
+		const div = document.createElement( 'div' );
+		div.classList.add( 'stat-item' );
+		div.innerHTML = `
+			<h2>${(tabDiplome[d.codeseriedip] > 0 ? tabDiplome[d.codeseriedip] : '-') ?? '-'}</h2>
+			<p>${d.codeseriedip}</p>
+		`;
+		cardDiplome.appendChild( div );
+	});
+
+	// Mise à jour de la section sur le genre
+	const tabGenre = {};
+	cardGenre.innerHTML = ``;
+	statistiques.genres.forEach(g => {
+		tabGenre[g.civilite] = g.total
+
+		const div = document.createElement( 'div' );
+		div.classList.add( 'stat-item' );
+		div.innerHTML = `
+			<h2>${(tabGenre[g.civilite] > 0 ? tabGenre[g.civilite] : '-') ?? '-'}</h2>
+			<p>${g.civilite }</p>
+		`;
+		cardGenre.appendChild( div );
+	});
+}
+
+async function mettreAJourTab(candidats)
+{
+	const tableauDonnees = document.getElementById('tableau-data');
+	tableauDonnees.innerHTML = ``;
+
+	candidats.forEach(c => {
+		const tr = document.createElement('tr');
+		tr.innerHTML = `
+			<td>${c.codecand}</td>
+			<td>${c.nomcand}</td>
+			<td>${c.prenomcand}</td>
+			<td>${c.civilite}</td>
+			<td>${c.profilcand}</td>
+		`;
+		tableauDonnees.appendChild(tr);
+	});
+}
+
+const barreRch = document.getElementById('barre-recherche');
+
+barreRch.addEventListener('input', Recherche);
+
+function Recherche() {
+	const query = barreRch.value.toLowerCase();
+	const ligne = tableau.getElementsByTagName('tr');
+
+	filtreLigne = Array.from(ligne).slice(1);
+
+	filtreLigne.forEach(l => {
+		const nom = l.cells[1].textContent.toLowerCase();
+		const prenom = l.cells[2].textContent.toLowerCase();
+		const civilite = l.cells[3].textContent.toLowerCase();
+		const profil = l.cells[4].textContent.toLowerCase();
+
+		if (nom.includes(query) || prenom.includes(query) || civilite.includes(query) || profil.includes(query)) {
+			l.style.display = '';
+		} else {
+			l.style.display = 'none';
+		}
+	});
+}
+
+const btnGroupe = document.getElementById('btnGrouper');
+
+btnGroupe.addEventListener('click', async() => {
+	const annee = anneeSelect.value;
+
+	if(groupeCache && groupeCache.annee === annee) {
+		modeGrouper = !modeGrouper;
+		if(modeGrouper) {
+			afficherGroupes(data.groupes);
+		} else {
+			btnAnnee.click();
+		}
+		return;
+	}
+
+	try {
+		const chargement = document.getElementById('loading-overlay');
+
+		const reponse = await fetch(`/groupes.php?annee=${encodeURIComponent(annee)}`);
+		if (!reponse.ok) throw new Error(`Erreur lors du chargement des données`);
+		const data = await reponse.json();
+
+		if(!data.success){
+			alert('Erreur lors du regroupement des données');
+			return;
+		}
+
+		groupeCache = { annee: annee, groupes: data.groupes };
+		sessionStorage.setItem('groupes_cache', JSON.stringify(groupeCache));
+		modeGrouper = true;
+		afficherGroupes(data.groupes);
+
+	} catch (error) {
+		console.error('Erreur lors du regroupement:', error);
+		alert('Impossible de se connecter au serveur. Assurez-vous que le backend est lancé sur http://localhost:8000');
+	}
+});
 
 function afficherGroupes(groupes) {
-	const placeholder = document.querySelector('.content-placeholder');
-
+	const emplacementTab = document.querySelector('.content-placeholder');
 	let html = `
-		<table id="tableau-candidats" class="table table-striped">
+			<table id="tableau-candidats" class="table table-striped">
 			<thead>
 				<tr>
 					<th>Série de bac</th>
@@ -171,113 +274,10 @@ function afficherGroupes(groupes) {
 		`;
 	});
 
-	html += `</tbody></table>`;
+html += `</tbody></table>`;
+emplacementTab.innerHTML = html;
 
-	placeholder.innerHTML = html;
-
-	// Recherche dans le mode grouper
-	const barreRch = document.getElementById('barre-recherche');
-	if (barreRch) {
-		barreRch.addEventListener('input', () => {
-			const query = barreRch.value.toLowerCase();
-			document.querySelectorAll('.groupe-row').forEach(tr => {
-				const texte = tr.textContent.toLowerCase();
-				tr.style.display = texte.includes(query) ? '' : 'none';
-			});
-			document.querySelectorAll('.groupe-total-row').forEach(tr => {
-				tr.style.display = '';
-			});
-		});
-	}
 }
-
-// ============================================================
-// MISE À JOUR PAGE / STATS / TABLEAU NORMAL
-// ============================================================
-
-function mettreAJourPage(data) {
-	if (!data.annees) return;
-
-	anneeSelect.innerHTML = '';
-	data.annees.forEach(annee => {
-		const opt = document.createElement('option');
-		opt.value = annee.value;
-		opt.textContent = annee.value;
-		anneeSelect.appendChild(opt);
-	});
-
-	btnAnnee.disabled = false;
-}
-
-function mettreAJourStats(statistiques) {
-	const cardDiplome = document.getElementById('card-diplome');
-	const cardGenre   = document.getElementById('card-genre');
-	const nbCandTotal = document.getElementById('nbCandTotal');
-
-	nbCandTotal.textContent = statistiques.totalCand;
-
-	cardDiplome.innerHTML = '';
-	statistiques.diplomes.forEach(d => {
-		const div = document.createElement('div');
-		div.classList.add('stat-item');
-		div.innerHTML = `<h2>${d.total > 0 ? d.total : '-'}</h2><p>${d.codeseriedip}</p>`;
-		cardDiplome.appendChild(div);
-	});
-
-	cardGenre.innerHTML = '';
-	statistiques.genres.forEach(g => {
-		const div = document.createElement('div');
-		div.classList.add('stat-item');
-		div.innerHTML = `<h2>${g.total > 0 ? g.total : '-'}</h2><p>${g.civilite}</p>`;
-		cardGenre.appendChild(div);
-	});
-}
-
-function mettreAJourTab(candidats) {
-	const placeholder = document.querySelector('.content-placeholder');
-	placeholder.innerHTML = `<table id="tableau-candidats" class="table table-striped"></table>`;
-	const tableau = document.getElementById('tableau-candidats');
-
-	tableau.innerHTML = `
-		<thead>
-			<tr>
-				<th>Code candidat</th>
-				<th>Nom</th>
-				<th>Prénom</th>
-				<th>Civilité</th>
-				<th>Profil</th>
-			</tr>
-		</thead>
-	`;
-
-	candidats.forEach(c => {
-		const tr = document.createElement('tr');
-		tr.innerHTML = `
-			<td>${c.codecand}</td>
-			<td>${c.nomcand}</td>
-			<td>${c.prenomcand}</td>
-			<td>${c.civilite}</td>
-			<td>${c.profilcand}</td>
-		`;
-		tableau.appendChild(tr);
-	});
-
-	const barreRch = document.getElementById('barre-recherche');
-	if (barreRch) {
-		barreRch.addEventListener('input', () => {
-			const query = barreRch.value.toLowerCase();
-			Array.from(tableau.getElementsByTagName('tr')).slice(1).forEach(tr => {
-				const texte = tr.textContent.toLowerCase();
-				tr.style.display = texte.includes(query) ? '' : 'none';
-			});
-		});
-	}
-}
-
-// ============================================================
-// UTILITAIRES
-// ============================================================
-
 
 function escapeHtml(str) {
 	if (!str) return '';

@@ -3,21 +3,19 @@
 
 require_once '../app/repositories/CandidatRepository.php';
 require_once '../app/repositories/SerieDiplomeRepository.php';
-require_once '../app/repositories/GenreRepository.php';
+require_once '../app/repositories/CandidatRepository.php';
 require_once '../app/repositories/AnneeRepository.php';
 
 class StatsService
 {
 	private CandidatRepository $candidatRepository;
 	private SerieDiplomeRepository $serieDiplomeRepository;
-	private GenreRepository $genreRepository;
 	private AnneeRepository $anneeRepository;
 
 	public function __construct()
 	{
 		$this->candidatRepository     = new CandidatRepository();
 		$this->serieDiplomeRepository = new SerieDiplomeRepository();
-		$this->genreRepository        = new GenreRepository();
 		$this->anneeRepository        = new AnneeRepository();
 	}
 
@@ -38,10 +36,10 @@ class StatsService
 	{
 		$data["totalCand"] = $this->candidatRepository->getNombreTotalFromAnnee($anneeDeb, $anneeFin);
 
-		$data["diplomes"] = $this->serieDiplomeRepository->getSeriesDiplomesFromAnnee($anneeDeb, $anneeFin);
+		$data["diplomes"] = $this->serieDiplomeRepository->getNbSeriesDiplomesFromAnnee($anneeDeb, $anneeFin);
 		$data["diplomes"] = $this->trierDiplomesStats( $data, "Générale", "STI2D", "STMG" );
 
-		$data["genres"] = $this->genreRepository->getGenresFromAnnee($anneeDeb, $anneeFin);
+		$data["genres"] = $this->candidatRepository->getNbGenresFromAnnee($anneeDeb, $anneeFin);
 		$data["genres"] = $this->trierGenreStats( $data, "M.", "Mme" );
 
 		return $data;

@@ -6,7 +6,7 @@ require_once '../app/services/StatsService.php';
 
 class TableauController extends Controller
 {
-	public function index(): void
+	public function tableau(): void
 	{
 		$this->view('tableau');
 	}

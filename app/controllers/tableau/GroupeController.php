@@ -1,17 +1,18 @@
 <?php
+
 require_once '../app/core/Controller.php';
 require_once '../app/repositories/GroupeRepository.php';
 
 class GroupeController extends Controller
 {
-	private GestionnaireRepository $groupeRepository;
+	private GroupeRepository $groupeRepository;
 
 	public function __construct()
 	{
-		$this->groupeRepository = new GestionnaireRepository();
+		$this->groupeRepository = new GroupeRepository();
 	}
 
-	public function groupes(): void
+	public function groupe()
 	{
 		$annee = $_GET['annee'] ?? null;
 
@@ -20,31 +21,25 @@ class GroupeController extends Controller
 			return;
 		}
 
-		$parts    = explode('-', $annee);
-		$anneeDeb = (int)($parts[0] ?? 0);
-		$anneeFin = (int)($parts[1] ?? 0);
+		$parts = explode('-', $annee);
+		$anneeDeb = (int)$parts[0];
+		$anneeFin = (int)$parts[1];
 
-		if (!$anneeDeb || !$anneeFin) {
-			$this->json(['success' => false, 'error' => 'Format d\'année invalide (attendu: YYYY-YYYY)'], 400);
-			return;
-		}
+		$data = $this->groupeRepository->getAllGroupes($anneeDeb, $anneeFin);
 
-		$rawData = $this->groupeRepository->getAllGroupesFromAnnee($anneeDeb, $anneeFin);
-
-		// Regroupement côté serveur par série de bac
 		$groupes = [];
-		foreach ($rawData as $row) {
+		foreach ($data as $row) {
 			$serie = $row['Série de bac réformé'];
-
 			if (!isset($groupes[$serie])) {
 				$groupes[$serie] = [
-					'serie'         => $serie,
-					'combinaisons'  => [],
-					'total'         => 0,
-					'filles'        => 0,
-					'garcons'       => 0,
-					'boursiers'     => 0,
-					'nonBoursiers'  => 0,
+					'serie' => $serie,
+					'combinaisons' => [],
+					'total' => 0,
+					'filles' => 0,
+					'garcons' => 0,
+					'boursiers' => 0,
+					'nonBoursiers' => 0,
+
 				];
 			}
 
@@ -57,17 +52,13 @@ class GroupeController extends Controller
 				'nonBoursiers' => (int)$row['Non Boursiers certifiés des lycées'],
 			];
 
-			$groupes[$serie]['total']        += (int)$row["Total des voeux de l'année N"];
+			$groupes[$serie]['total']         += (int)$row["Total des voeux de l'année N"];
 			$groupes[$serie]['filles']        += (int)$row['Filles'];
 			$groupes[$serie]['garcons']       += (int)$row['Garçons'];
 			$groupes[$serie]['boursiers']     += (int)$row['Boursiers certifiés des lycées'];
 			$groupes[$serie]['nonBoursiers']  += (int)$row['Non Boursiers certifiés des lycées'];
 		}
 
-		$this->json([
-			'success' => true,
-			'annee'   => $annee,
-			'groupes' => array_values($groupes),
-		]);
+		$this -> json(['success' => true, 'groupes' => array_values($groupes)]);
 	}
 }

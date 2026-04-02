@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{ title | default('ParcourSUPPORT') }}</title>
+	<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/css/app.css" rel="stylesheet">
+	{% if additional_css is defined %}
+		<link href="/css/{{ additional_css }}" rel="stylesheet">
+	{% endif %}
+</head>
+<body>
+
+<div class="structure-container">
+
+	{# --- 1. LE MENU LATÉRAL (SIDEBAR) --- #}
+	<aside class="sidebar-brutalist">
+		<div class="sidebar-header">
+			<span class="nav-logo">{{ project_name | default('ParcourSUPPORT') }}</span>
+		</div>
+
+		<nav class="sidebar-nav">
+			<a href="platforme.php" class="menu-item "><i class="bi bi-cpu"></i> Plateforme</a>
+			<a href="carte.php" class="menu-item"><i class="bi bi-map"></i> Map</a>
+			<a href="tableau.php" class="menu-item"><i class="bi bi-table"></i> Table</a>
+			<a href="gestionnaire.php" class="menu-item"><i class="bi bi-database"></i> Gestion Données</a>
+			<a href="creation.php" class="menu-item"><i class="bi bi-creation"></i> Création Compte</a>
+		</nav>
+
+		<div class="sidebar-footer">
+			<span class="v-tag">v1.0.0</span>
+		</div>
+	</aside>
+
+	{# --- 2. CONTENU PRINCIPAL (DROITE) --- #}
+	<main class="main-content">
+
+		{# BARRE HAUT (Recherche + Profil) #}
+		<header class="top-header">
+			{% if recherche_active is defined %}
+				<div class="search-container">
+					<input type="text" id="barre-recherche" placeholder="Rechercher étudiant..." class="search-input">
+				</div>
+			{% else %}
+				<div class="search-container">
+				</div>
+			{% endif %}
+
+			<div class="header-actions">
+				<button class="icon-btn">💡</button>
+				<button class="icon-btn">⚙️</button>
+				<div class="user-profile">
+					<img src="https://ui-avatars.com/api/?name=Olivia+Rhye&background=c7d9f8&color=0D1B3E" alt="Avatar">
+					<span class="user-name">Olivia Rhye</span>
+				</div>
+			</div>
+		</header>
