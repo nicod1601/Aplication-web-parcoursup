@@ -1,3 +1,10 @@
+// Géocoder un code postal
+const res = await fetch('https://api-adresse.data.gouv.fr/search/?q=42000&limit=1&type=municipality');
+const data = await res.json();
+const lat = data.features[0].geometry.coordinates[1];
+const lng = data.features[0].geometry.coordinates[0];
+
+
 // ============================================================
 // COULEURS PAR SÉRIE DE BAC
 // ============================================================

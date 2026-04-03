@@ -15,12 +15,12 @@ menuItems.forEach(item => {
 // ============================================================
 // VARIABLES GLOBALES
 // ============================================================
-const fileInput          = document.getElementById('file-input');
+const fileInput           = document.getElementById('file-input');
 const confirmBtnContainer = document.getElementById('confirm-btn-container');
-const table              = document.getElementById('excel-table');
-const paginationBar      = document.getElementById('paginationBar');
-const traitementText     = document.getElementById('traitement');
-const loadingOverlay     = document.getElementById('loading-overlay');
+const table               = document.getElementById('excel-table');
+const paginationBar       = document.getElementById('paginationBar');
+const traitementText      = document.getElementById('traitement');
+const loadingOverlay      = document.getElementById('loading-overlay');
 
 const LIMITE_LIGNES = 25;
 let excelData   = [];
@@ -32,7 +32,7 @@ renderTable([]);
 // LECTURE DU FICHIER EXCEL
 // ============================================================
 fileInput.addEventListener('change', (e) => {
-	const file   = e.target.files[0];
+	const file = e.target.files[0];
 	if (!file) return;
 
 	const reader = new FileReader();
@@ -125,6 +125,7 @@ function updateTable() {
 
 	const totalPages = Math.ceil(excelData.length / LIMITE_LIGNES) || 1;
 
+	// Affiche le nombre de lignes lues dans le fichier (avant validation serveur)
 	document.getElementById('dossier-count').textContent =
 		`${excelData.length} dossier${excelData.length > 1 ? 's' : ''} chargé${excelData.length > 1 ? 's' : ''}`;
 
@@ -219,7 +220,16 @@ confirmBtnContainer.addEventListener('click', async (e) => {
 // RAPPORT D'IMPORT
 // ============================================================
 function afficherRapportImport(result) {
-	const nbIgnorees = result.nbIgnorees ?? 0;
+	const nbIgnorees  = result.nbIgnorees      ?? 0;
+	const nbImportees = result.lignesImportees ?? 0;
+	const nbFichier   = excelData.length;
+
+	// ✅ Mettre à jour le compteur "Information" avec le vrai nombre inséré en base
+	const dossierCount = document.getElementById('dossier-count');
+	if (dossierCount) {
+		dossierCount.textContent =
+			`${nbImportees} dossier${nbImportees > 1 ? 's' : ''} importé${nbImportees > 1 ? 's' : ''} en base`;
+	}
 
 	let html = `
 		<div id="rapport-import" style="margin-top:1.5rem;">
@@ -231,23 +241,18 @@ function afficherRapportImport(result) {
 				display: flex;
 				align-items: center;
 				gap: 16px;
+				flex-wrap: wrap;
 			">
 				<span style="font-size:0.85rem;font-weight:600;">
 					✅ ${result.message}
 				</span>
-				${nbIgnorees > 0 ? `
-					<span style="
-						color: var(--red);
-						font-size: 0.8rem;
-						font-weight: 600;
-					">
-						⚠️ ${nbIgnorees} ligne${nbIgnorees > 1 ? 's' : ''} ignorée${nbIgnorees > 1 ? 's' : ''}
-					</span>
-				` : `
-					<span style="color:#3b6d11;font-size:0.8rem;">
-						Aucune ligne ignorée
-					</span>
-				`}
+				<span style="font-size:0.8rem;color:var(--muted);">
+					Fichier : <strong>${nbFichier}</strong> lignes
+					&nbsp;|&nbsp;
+					Importées : <strong style="color:#3b6d11;">${nbImportees}</strong>
+					&nbsp;|&nbsp;
+					Ignorées : <strong style="color:${nbIgnorees > 0 ? 'var(--red)' : '#3b6d11'};">${nbIgnorees}</strong>
+				</span>
 			</div>
 	`;
 

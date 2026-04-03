@@ -5,8 +5,7 @@ set_time_limit(900);
 
 class ImportRepository
 {
-	// Valeurs considérées comme "vides" dans le fichier Excel
-	private const VALEURS_VIDES = ['', 'inconnu', 'inconnue', 'inconnus', 'inconnues', 
+	private const VALEURS_VIDES = ['', 'inconnu', 'inconnue', 'inconnus', 'inconnues',
 									'n/a', 'na', 'null', 'none', '-', '—', '?'];
 
 	public function getAllDataFromExcel()
@@ -25,8 +24,6 @@ class ImportRepository
 		$anneeDeb = (int)$years[0];
 		$anneeFin = (int)($years[1] ?? ($anneeDeb + 1));
 
-		// Déterminer le suffixe utilisé dans les colonnes Excel (ex: 2024/2025)
-		// On transforme "2024-2025" en "2024/2025"
 		$suffix = str_replace('-', '/', $anneeSelection);
 
 		try {
@@ -46,11 +43,9 @@ class ImportRepository
 			$locCounter  = (int)$pdo->query("SELECT COALESCE(MAX(idLoc),  0) FROM Localisation")->fetchColumn() + 1;
 			$etabCounter = (int)$pdo->query("SELECT COALESCE(MAX(idEtab), 0) FROM Etablissement")->fetchColumn() + 1;
 
-			// ---- Lignes ignorées ----
 			$lignesIgnorees  = [];
 			$lignesImportees = 0;
 
-			// ---- Statements (identiques à avant) ----
 			$stmtLocalisation = $pdo->prepare("
 				INSERT INTO Localisation (idLoc, nomCommu, nomDept, pays)
 				VALUES (:idLoc, :nomCommu, :nomDept, :pays)
@@ -108,20 +103,17 @@ class ImportRepository
 				ON CONFLICT (idCand, idEnsSpe) DO NOTHING
 			");
 
-			// ---- Boucle principale ----
 			foreach ($excelData as $numeroLigne => $row) {
 
-				// ── VALIDATION ──────────────────────────────────────────
-				$erreurs = $this->validerLigne($row, $numeroLigne + 2, $suffix); 
+				$erreurs = $this->validerLigne($row, $numeroLigne + 2, $suffix);
 				if (!empty($erreurs)) {
 					$lignesIgnorees[] = [
 						'ligne'   => $numeroLigne + 2,
 						'erreurs' => $erreurs,
 						'nom'     => trim($row['Candidat - Nom'] ?? '') ?: '(inconnu)',
 					];
-					continue; // on skip cette ligne
+					continue;
 				}
-				// ────────────────────────────────────────────────────────
 
 				// 1. Localisation
 				$commune = $this->getCol($row, 'Commune Etablissement origine - Libellé', $suffix);
@@ -200,35 +192,28 @@ class ImportRepository
 					$idSpe = $speMap[$libSpe] ?: null;
 				}
 
-				// 7. Enseignement Spécialité — on découpe la combinaison en spécialités individuelles
-				$combinaison = trim($row['Combinaison des enseignements de spécialité en Terminale'] ?? '');
+				// 7. Enseignement Spécialité
+				$combinaison   = trim($row['Combinaison des enseignements de spécialité en Terminale'] ?? '');
 				$abandonneeLib = trim($row['Enseignement De spécialité abandonné en Première'] ?? '');
-
-				$idsEnsSpe = []; // va contenir les ids de chaque spécialité individuelle
+				$idsEnsSpe     = [];
 
 				if (!$this->estVide($combinaison)) {
-					// Découper par /, | ou , pour isoler chaque spécialité (ex: Msgn/ Gestion)
 					$specialites = preg_split('/[\/|,]/', $combinaison, -1, PREG_SPLIT_NO_EMPTY);
 					$specialites = array_map('trim', $specialites);
 					$specialites = array_filter($specialites, fn($s) => !$this->estVide($s));
 
 					foreach ($specialites as $libSpe) {
 						if ($this->estVide($libSpe)) continue;
-
 						if (!isset($ensMap[$libSpe])) {
 							$pdo->prepare("
-								INSERT INTO EnseignementSpecialite (libEnsSpe) 
-								VALUES (:libEnsSpe) 
+								INSERT INTO EnseignementSpecialite (libEnsSpe)
+								VALUES (:libEnsSpe)
 								ON CONFLICT DO NOTHING
 							")->execute([':libEnsSpe' => $libSpe]);
-
-							$s = $pdo->prepare("
-								SELECT idEnsSpe FROM EnseignementSpecialite WHERE libEnsSpe = :libEnsSpe
-							");
+							$s = $pdo->prepare("SELECT idEnsSpe FROM EnseignementSpecialite WHERE libEnsSpe = :libEnsSpe");
 							$s->execute([':libEnsSpe' => $libSpe]);
 							$ensMap[$libSpe] = (int)$s->fetchColumn();
 						}
-
 						if ($ensMap[$libSpe]) {
 							$idsEnsSpe[] = $ensMap[$libSpe];
 						}
@@ -248,11 +233,29 @@ class ImportRepository
 				}
 				$idSerieDip = $serieMap[$codeSerieDip];
 
-				// 9. Candidat
+				// 9. Candidat — notes : tiret ou vide = null (pas d'erreur)
+				$noteGlobale = null;
+				$rawGlobale  = $row['Note Globale Calculée'] ?? '';
+				if (!$this->estVide($rawGlobale) && is_numeric($rawGlobale)) {
+					$noteGlobale = (float)$rawGlobale;
+				}
+
+				$noteFicheAvenir = null;
+				$rawFicheAvenir  = $row['Note Fiche Avenir'] ?? '';
+				if (!$this->estVide($rawFicheAvenir) && is_numeric($rawFicheAvenir)) {
+					$noteFicheAvenir = (float)$rawFicheAvenir;
+				}
+
+				$noteLycee = null;
+				$rawLycee  = $row['Note Lycée calculée'] ?? '';
+				if (!$this->estVide($rawLycee) && is_numeric($rawLycee)) {
+					$noteLycee = (float)$rawLycee;
+				}
+
 				$noteDossier = null;
-				$rawNote     = $row['Note Dossier'] ?? '';
-				if ($rawNote !== '' && $rawNote !== null && is_numeric($rawNote)) {
-					$noteDossier = (float)$rawNote;
+				$rawDossier  = $row['Note Dossier'] ?? '';
+				if (!$this->estVide($rawDossier) && is_numeric($rawDossier)) {
+					$noteDossier = (float)$rawDossier;
 				}
 
 				$currentCandId = $candCounter++;
@@ -264,9 +267,9 @@ class ImportRepository
 					':civilite'        => trim($row['Civilité']),
 					':profilCand'      => trim($row['Profil Candidat - Libellé']),
 					':nvBoursCand'     => (int)($row['Candidat boursier - Code'] ?? 0),
-					':noteGlobale'     => (float)($row['Note Globale Calculée'] ?? 0),
-					':noteFicheAvenir' => (float)($row['Note Fiche Avenir'] ?? 0),
-					':noteLycee'       => (float)($row['Note Lycée calculée'] ?? 0),
+					':noteGlobale'     => $noteGlobale,
+					':noteFicheAvenir' => $noteFicheAvenir,
+					':noteLycee'       => $noteLycee,
 					':noteDossier'     => $noteDossier,
 					':anneeDeb'        => $anneeDeb,
 					':anneeFin'        => $anneeFin,
@@ -279,18 +282,15 @@ class ImportRepository
 					':idEtab'          => $idEtab,
 				]);
 
-				// 10. Candidat_EnseignementSpecialite — une ligne par spécialité individuelle
+				// 10. Candidat_EnseignementSpecialite
 				foreach ($idsEnsSpe as $idEnsSpe) {
-					// La spécialité abandonnée est celle dont le libellé apparaît dans abandonneeLib
 					$estAbandonnee = false;
 					if (!$this->estVide($abandonneeLib)) {
-						// On cherche si le libellé de cette spécialité est mentionné dans le champ abandonné
 						$libCette = array_search($idEnsSpe, $ensMap);
 						if ($libCette !== false) {
 							$estAbandonnee = stripos($abandonneeLib, $libCette) !== false;
 						}
 					}
-
 					$stmtCandEnsSpecialite->execute([
 						':idCand'     => $currentCandId,
 						':idEnsSpe'   => $idEnsSpe,
@@ -306,6 +306,7 @@ class ImportRepository
 			return [
 				'success'         => true,
 				'message'         => "$lignesImportees candidats importés pour $anneeDeb-$anneeFin.",
+				'lignesImportees' => $lignesImportees,
 				'lignesIgnorees'  => $lignesIgnorees,
 				'nbIgnorees'      => count($lignesIgnorees),
 			];
@@ -318,30 +319,21 @@ class ImportRepository
 		}
 	}
 
-	/**
-	 * Récupère une colonne de manière flexible (avec ou sans suffixe d'année)
-	 */
 	private function getCol(array $row, string $baseName, string $suffix = ''): string
 	{
 		$exactMatch = trim($baseName . ' ' . $suffix);
 		if (isset($row[$exactMatch])) return trim((string)$row[$exactMatch]);
 		if (isset($row[$baseName]))   return trim((string)$row[$baseName]);
-
-		// Recherche floue si l'année est différente (ex: 2023/2024 au lieu de 2024/2025)
 		foreach ($row as $key => $value) {
 			if (stripos($key, $baseName) !== false) return trim((string)$value);
 		}
 		return '';
 	}
 
-	// ────────────────────────────────────────────────────────────────
-	// Validation d'une ligne — retourne un tableau d'erreurs (vide = OK)
-	// ────────────────────────────────────────────────────────────────
 	private function validerLigne(array $row, int $numeroLigne, string $suffix): array
 	{
 		$erreurs = [];
 
-		// Champs candidat obligatoires
 		$champsObligatoires = [
 			'Candidat - Code'           => 'Code candidat',
 			'Candidat - Nom'            => 'Nom',
@@ -350,18 +342,15 @@ class ImportRepository
 			'Profil Candidat - Libellé' => 'Profil candidat',
 		];
 		foreach ($champsObligatoires as $colonne => $label) {
-			$valeur = $row[$colonne] ?? '';
-			if ($this->estVide($valeur)) {
+			if ($this->estVide($row[$colonne] ?? '')) {
 				$erreurs[] = "$label manquant ou invalide";
 			}
 		}
 
-		// Code candidat doit être numérique
 		if (!empty($row['Candidat - Code']) && !is_numeric($row['Candidat - Code'])) {
 			$erreurs[] = 'Code candidat non numérique : ' . $row['Candidat - Code'];
 		}
 
-		// Série diplôme obligatoire
 		if ($this->estVide($row['Série Diplôme - Code'] ?? '')) {
 			$erreurs[] = 'Série diplôme manquante';
 		}
@@ -369,44 +358,13 @@ class ImportRepository
 			$erreurs[] = 'Libellé série diplôme manquant';
 		}
 
-		// Type diplôme obligatoire et numérique
 		$idTypeDip = $row['Type Diplôme - Code'] ?? '';
 		if ($this->estVide($idTypeDip) || !is_numeric($idTypeDip)) {
 			$erreurs[] = 'Type diplôme invalide ou manquant';
 		}
 
-		// Localisation obligatoire
-		if ($this->estVide($this->getCol($row, 'Commune Etablissement origine - Libellé', $suffix))) {
-			$erreurs[] = 'Commune établissement manquante';
-		}
-		if ($this->estVide($this->getCol($row, 'Pays Etablissement origine - Libellé', $suffix))) {
-			$erreurs[] = 'Pays établissement manquant';
-		}
-
-		// Établissement obligatoire
-		if ($this->estVide($this->getCol($row, 'Nom Etablissement origine', $suffix))) {
-			$erreurs[] = 'Nom établissement manquant';
-		}
-
-		// Notes : doivent être numériques si présentes
-		$champsNotes = [
-			'Note Globale Calculée' => 'Note globale',
-			'Note Fiche Avenir'     => 'Note fiche avenir',
-			'Note Lycée calculée'   => 'Note lycée',
-		];
-		foreach ($champsNotes as $colonne => $label) {
-			$valeur = $row[$colonne] ?? '';
-			if ($valeur !== '' && $valeur !== null && !is_numeric($valeur)) {
-				$erreurs[] = "$label n'est pas un nombre : $valeur";
-			}
-		}
-
 		return $erreurs;
 	}
-
-	// ────────────────────────────────────────────────────────────────
-	// Vérifie si une valeur est considérée comme vide
-	// ────────────────────────────────────────────────────────────────
 	private function estVide($valeur): bool
 	{
 		if ($valeur === null || $valeur === false) return true;

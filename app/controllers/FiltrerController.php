@@ -57,4 +57,17 @@ class FiltrerController extends Controller
 
         $this->json($data);
     }
+
+    public function recupererDonneesFromEtablissement()
+    {
+        $filtres = [
+            'etablissement' => $_GET['etablissement'] ?? null,
+            'commune'       => $_GET['commune']       ?? null,
+            'departement'   => $_GET['departement']   ?? null,
+        ];
+
+        $data = $this->donneesService->getDonneesFromEtablissement($filtres);
+
+        $this->json($data);
+    }
 }

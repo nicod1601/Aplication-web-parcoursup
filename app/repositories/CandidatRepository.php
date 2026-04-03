@@ -172,4 +172,34 @@ class CandidatRepository
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getAllCandidats() {
+        $sql = "SELECT 
+                c.codeCand,
+                c.nomCand,
+                c.prenomCand,
+                c.civilite,
+                c.profilCand,
+                c.nvBoursCand,
+                f.libFiliere,
+                form.libFormation,
+                e.nomEtab,
+                l.nomCommu,
+                l.nomDept,
+                td.libTypeDip,
+                sd.libSerieDip,
+                c.noteGlobale,
+                c.commentaire
+            FROM Candidat c
+            LEFT JOIN Filiere f ON c.idFiliere = f.idFiliere
+            LEFT JOIN Formation form ON c.idFormation = form.idFormation
+            LEFT JOIN Etablissement e ON c.idEtab = e.idEtab
+            LEFT JOIN Localisation l ON e.idLoc = l.idLoc
+            LEFT JOIN TypeDiplome td ON c.idTypeDip = td.idTypeDip
+            LEFT JOIN SerieDiplome sd ON c.idSerieDip = sd.idSerieDip";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

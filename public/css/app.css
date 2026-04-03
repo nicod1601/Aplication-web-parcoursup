@@ -558,12 +558,14 @@ main {
 /* Les valeurs 0 et 20 */
 .filter-range-val {
   font-size: 0.75rem;
+  width: 20px;
+  text-align: center;
   color: var(--muted);
   font-family: var(--font-body);
   min-width: 18px;
   text-align: center;
   flex-shrink: 0;
-  position: relative; /* sort du flux absolu des inputs */
+  position: relative;
   z-index: 1;
 }
 

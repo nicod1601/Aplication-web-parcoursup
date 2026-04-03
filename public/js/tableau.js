@@ -1,10 +1,15 @@
 const anneeSelect= document.getElementById( 'annee-select' );
 const btnAnnee   = document.getElementById( 'btnAnnee'     );
+const btnExport  = document.getElementById( 'btnExporter'  );
 
 const btnFiltrer = document.getElementById( 'btnFiltrer' );
 
 let groupeCache = null;
 let modeGrouper  = false;
+let allCandidats = [];
+let filteredCandidats = [];
+let currentPage = 1;
+const rowsPerPage = 25;
 
 window.addEventListener( 'load', async () => {
 	try
@@ -96,6 +101,8 @@ btnAnnee.addEventListener( 'click', async  () => {
 
 		btnFiltrer.disabled = false;
 		sessionStorage.setItem( 'btnFiltrer-disabled', JSON.stringify( false ) );
+
+		btnExport.disabled = false;
 	}
 	catch (error)
 	{
@@ -162,22 +169,62 @@ function mettreAJourStats( statistiques )
 	});
 }
 
-async function mettreAJourTab(candidats)
+function mettreAJourTab(candidats)
 {
-	const tableauDonnees = document.getElementById('tableau-data');
-	tableauDonnees.innerHTML = ``;
+	// Initialisation des données globales pour la pagination et la recherche
+	allCandidats = candidats || [];
+	filteredCandidats = [...allCandidats];
+	currentPage = 1;
+	renderTable();
+}
 
-	candidats.forEach(c => {
+function renderTable() {
+	const tableauDonnees = document.getElementById('tableau-data');
+	if (!tableauDonnees) return;
+	
+	tableauDonnees.innerHTML = '';
+
+	if (filteredCandidats.length === 0) {
+		tableauDonnees.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:gray;">Aucun candidat trouvé</td></tr>`;
+		updatePagination();
+		return;
+	}
+
+	// Calcul de la tranche de données à afficher (Pagination)
+	const start = (currentPage - 1) * rowsPerPage;
+	const end = start + rowsPerPage;
+	const pageData = filteredCandidats.slice(start, end);
+
+	pageData.forEach(c => {
 		const tr = document.createElement('tr');
 		tr.innerHTML = `
-			<td>${c.codecand}</td>
-			<td>${c.nomcand}</td>
-			<td>${c.prenomcand}</td>
-			<td>${c.civilite}</td>
-			<td>${c.profilcand}</td>
+			<td>${escapeHtml(String(c.codecand))}</td>
+			<td>${escapeHtml(c.nomcand)}</td>
+			<td>${escapeHtml(c.prenomcand)}</td>
+			<td>${escapeHtml(c.civilite)}</td>
+			<td>${escapeHtml(c.profilcand)}</td>
 		`;
 		tableauDonnees.appendChild(tr);
 	});
+
+	updatePagination();
+}
+
+function updatePagination() {
+	const paginationBar = document.getElementById('paginationBar');
+	if (!paginationBar) return;
+
+	paginationBar.style.display = 'flex';
+
+	const totalPages = Math.ceil(filteredCandidats.length / rowsPerPage) || 1;
+	paginationBar.innerHTML = `
+		<button class="btn btn-secondary" id="prevPage" ${currentPage === 1 ? 'disabled' : ''}>← Précédent</button>
+		<span id="pageInfo" style="margin: 0 15px;">Page ${currentPage} / ${totalPages}</span>
+		<button class="btn btn-secondary" id="nextPage" ${currentPage >= totalPages ? 'disabled' : ''}>Suivant →</button>
+	`;
+
+	document.getElementById('prevPage').onclick = () => { if(currentPage > 1) { currentPage--; renderTable(); } };
+	document.getElementById('nextPage').onclick = () => { if(currentPage < totalPages) { currentPage++; renderTable(); } };
 }
 
 const barreRch = document.getElementById('barre-recherche');
@@ -186,22 +233,20 @@ if (barreRch)
 	barreRch.addEventListener('input', Recherche);
 
 function Recherche() {
-	const tableau = document.getElementById('tableau-data'); // récupéré dynamiquement
-	if (!tableau) return;
-
 	const query  = barreRch.value.toLowerCase();
-	const lignes = Array.from(tableau.getElementsByTagName('tr')).slice(1);
 
-	lignes.forEach(l => {
-		const nom      = l.cells[1]?.textContent.toLowerCase() ?? '';
-		const prenom   = l.cells[2]?.textContent.toLowerCase() ?? '';
-		const civilite = l.cells[3]?.textContent.toLowerCase() ?? '';
-		const profil   = l.cells[4]?.textContent.toLowerCase() ?? '';
-
-		l.style.display = (nom.includes(query) || prenom.includes(query) ||
-			civilite.includes(query) || profil.includes(query))
-			? '' : 'none';
+	filteredCandidats = allCandidats.filter(c => {
+		return (
+			(c.nomcand?.toLowerCase().includes(query)) ||
+			(c.prenomcand?.toLowerCase().includes(query)) ||
+			(c.civilite?.toLowerCase().includes(query)) ||
+			(c.profilcand?.toLowerCase().includes(query)) ||
+			(c.codecand?.toString().includes(query))
+		);
 	});
+
+	currentPage = 1;
+	renderTable();
 }
 
 const btnGroupe = document.getElementById('btnGrouper');
@@ -245,6 +290,10 @@ btnGroupe.addEventListener('click', async() => {
 });
 
 function afficherGroupes(groupes) {
+	// On masque la pagination car les groupes affichent tout d'un coup
+	const paginationBar = document.getElementById('paginationBar');
+	if (paginationBar) paginationBar.style.display = 'none';
+
 	const emplacementTab = document.querySelector('.content-placeholder');
 	let html = `
 			<table id="tableau-candidats" class="table table-striped">
@@ -300,3 +349,23 @@ function escapeHtml(str) {
 	if (!str) return '';
 	return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+
+async function downloadExcel() {
+	const response = await fetch('/export.php');
+	const data = await response.json();
+
+	if (!response.ok) {
+		throw new Error(data?.error || 'Erreur export serveur');
+	}
+	if (!Array.isArray(data)) {
+		throw new Error('Format export invalide: tableau attendu');
+	}
+
+	const worksheet = XLSX.utils.json_to_sheet(data);
+	const workbook = XLSX.utils.book_new();
+	XLSX.utils.book_append_sheet(workbook, worksheet, "Candidats");
+	XLSX.writeFile(workbook, "Export_Candidats.xlsx");
+}
+
+
+document.getElementById('btnExporter').addEventListener('click', downloadExcel);

@@ -138,3 +138,23 @@
     display: flex;
     gap: 10px;
 }
+
+/* ============================================================
+   PAGINATION
+============================================================ */
+
+#paginationBar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 1.5rem;
+}
+
+#pageInfo {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-family: var(--font-body);
+    min-width: 120px;
+    text-align: center;
+}
