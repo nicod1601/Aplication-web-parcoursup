@@ -10,7 +10,7 @@ class EnseignementSpecialiteRepository
         $this->pdo = Repository::getInstance()->getPDO();
     }
 
-    public function getLibEnseignementSpecialiteFromAnnee($anneeDeb, $anneeFin): ?array
+    public function getLibEnseignementSpecialiteFromTypeBac($typeBac): ?array
     {
         $stmtEnseignementSpecialite = $this->pdo->prepare("
             SELECT DISTINCT ensSpe.libEnsSpe
@@ -19,10 +19,12 @@ class EnseignementSpecialiteRepository
                  Candidat_EnseignementSpecialite AS cand_ensSpe on ensSpe.idEnsSpe = cand_ensSpe.idEnsSpe
                  INNER JOIN
                  Candidat AS cand ON cand.idCand = cand_ensSpe.idCand
-            WHERE cand.anneeDeb = ? AND cand.anneeFin = ?
+                 INNER JOIN
+                 SerieDiplome AS serieDip ON serieDip.idSerieDip = cand.idSerieDip
+            WHERE serieDip.codeSerieDip = ?
             ORDER BY ensSpe.libEnsSpe ASC
         ");
-        $stmtEnseignementSpecialite->execute([$anneeDeb, $anneeFin]);
+        $stmtEnseignementSpecialite->execute( [$typeBac] );
         $libEnseignementsSpecialite = $stmtEnseignementSpecialite->fetchAll(PDO::FETCH_ASSOC);
 
         return $libEnseignementsSpecialite;

@@ -1,0 +1,162 @@
+{% include '_template/header.html.twig' with {
+	title: title | default('MonProjet'),
+	project_name: project_name | default('MonProjet'),
+	additional_css: 'tableau.css',
+	recherche_active: true
+} %}
+	<div class="ligne">
+		{# ZONE Diplome #}
+		<div class="card-lg">
+			<div class="card-header">
+				DIPLÔME
+				<div class="dots-group">
+					<div class="dot-header"></div>
+					<div class="dot-header red"></div>
+					<div class="dot-header"></div>
+				</div>
+			</div>
+			<div id='card-diplome' class="ligne">
+				{# ZONE Diplôme #}
+				<div class="stat-item">
+					<h2>-</h2>
+					<p>-</p>
+				</div>
+				<div class="stat-item">
+					<h2>-</h2>
+					<p>-</p>
+				</div>
+				<div class="stat-item">
+					<h2>-</h2>
+					<p>-</p>
+				</div>
+				<div class="stat-item">
+					<h2>-</h2>
+					<p>-</p>
+				</div>
+			</div>
+		</div>
+
+		{# ZONE Annee #}
+		<div class="card">
+			<div class="card-header">
+				ANNÉE
+				<div class="dots-group">
+					<div class="dot-header"></div>
+					<div class="dot-header red"></div>
+					<div class="dot-header"></div>
+				</div>
+			</div>
+			<div class="stat-item" >
+				<select name="annee" id="annee-select" class="custom-select">
+						<option value="null" selected>Pas de promotion importée</option>
+				</select>
+
+				<button type="submit" id="btnAnnee" class="btn btn-primary" disabled>Valider</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="ligne">
+		{# ZONE Nombre total #}
+		<div class="card">
+			<div class="card-header">
+				NOMBRE TOTAL
+				<div class="dots-group">
+					<div class="dot-header"></div>
+					<div class="dot-header red"></div>
+					<div class="dot-header"></div>
+				</div>			
+			</div>
+			<div id="card-total" class="ligne">
+				<div class="stat-item" style="text-align:center; padding: 20px;">
+					<h2 id="nbCandTotal">-</h2>
+					<p>Nombre total</p>
+				</div>
+			</div>
+		</div>
+
+		{# ZONE Genre #}
+		<div class="card-lg">
+			<div class="card-header">
+				GENRE
+				<div class="dots-group">
+					<div class="dot-header"></div>
+					<div class="dot-header red"></div>
+					<div class="dot-header"></div>
+				</div>
+			</div>
+			<div id="card-genre" class="ligne">
+				<div class="stat-item">
+					<h2>-</h2>
+					<p>-</p>
+				</div>
+				<div class="stat-item">
+					<h2>-</h2>
+					<p>-</p>
+				</div>
+				<div class="stat-item">
+					<h2>-</h2>
+					<p>-</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	{# ZONE DE TRAVAIL (Tableaux, Cartes) #}
+	<section class="page-body">
+		<div class="hero-sub">
+			<span>TABLEAU</span>
+			<div class="btn-group-right">
+				<button id="btnFiltrer" class="btn btn-secondary mb-3">Filtrer</button>
+				<button id="btnGrouper" class="btn btn-secondary mb-3">Grouper</button>
+				<button id="btnExporter" class="btn btn-primary mb-3">Exporter en CSV</button>
+			</div>
+		</div>
+
+		{# Exemple de contenu #}
+		<div class="content-placeholder">
+			<table id='tableau-candidats' class="table table-striped">
+				<thead>
+				<td>Code du candidat</td>
+				<td>Nom du candidat</td>
+				<td>Prénom du candidat</td>
+				<td>Civilité du candidat</td>
+				<td>Profil du candidat</td>
+				</thead>
+				<tbody id="tableau-data">
+				<tr>
+					<td colspan="100" style="text-align:center; padding: 30px; color: gray; font-style: italic;">
+						📭 Aucune donnée à afficher — importez un fichier Excel
+					</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+		<!-- Fenêtre de chargement -->
+	<div id="loading-overlay" style="display:none;">
+		<div class="loading-box">
+			<div class="spinner"></div>
+			<p id="traitement"></p>
+		</div>
+	</div>
+</main>
+</div>
+<script>
+	const menuItems = document.querySelectorAll('.menu-item');
+	menuItems[2].classList.add('active');
+
+	menuItems.forEach(item => {
+		item.addEventListener('click', () => {
+			menuItems.forEach(i => i.classList.remove('active'));
+			item.classList.add('active');
+
+			const page = item.getAttribute('href').substring(0);
+			window.location.href = `../../public/${page}`;
+
+		});
+	});
+</script>
+<script src="/js/tableau.js"></script>

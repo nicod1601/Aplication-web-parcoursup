@@ -20,29 +20,41 @@ window.addEventListener( 'load', async () => {
 
 
 		const cached = sessionStorage.getItem('groupes_cache');
-		if (cached) {
+		if (cached)
 			groupeCache = JSON.parse(cached);
-		}
+
+
 		/* Gestion des filtres */
-		/*
-		const reponseFiltre = await fetch('/filtrer.php', {
-			method: 'POST',
-			headers: {
-				'Authorization': 'Bearer appli-secret-token',
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(filtres)
-		});
+		const filtresAppliques = sessionStorage.getItem('filtresAppliques');
 
-		if ( ! reponseFiltre.ok)
-			throw new Error(`Erreur lors du chargement des filtres`);
+		if (filtresAppliques)
+		{
+			sessionStorage.removeItem('filtresAppliques');
 
-		const dataFiltre = await reponse.json();
-		mettreAJourTab(dataFiltre.candidats);
-		*/
+			const reponse = await fetch('/sessionCandidats.php');
+			const data    = await reponse.json();
+
+			if (data.candidats) mettreAJourTab(data.candidats);
+		}
 
 		/* Gestion des statistiques lors d'un retour sur la page */
-		/* ... */
+		if ( sessionStorage.getItem('statistiques') )
+		{
+			const statistiques = JSON.parse(sessionStorage.getItem('statistiques'));
+			mettreAJourStats(statistiques);
+		}
+
+		if ( sessionStorage.getItem('candidats') )
+		{
+			const candidats = JSON.parse(sessionStorage.getItem('candidats'));
+			mettreAJourTab(candidats);
+		}
+
+		if ( sessionStorage.getItem('btnFiltrer-disabled') )
+		{
+			const btnFiltrerDisabled = JSON.parse(sessionStorage.getItem('btnFiltrer-disabled'));
+			btnFiltrer.disabled = btnFiltrerDisabled;
+		}
 	}
 	catch (error)
 	{
@@ -81,6 +93,9 @@ btnAnnee.addEventListener( 'click', async  () => {
 		sessionStorage.removeItem( 'candidats' );
 		mettreAJourTab( data.candidats );
 		sessionStorage.setItem( 'candidats', JSON.stringify(data.candidats) );
+
+		btnFiltrer.disabled = false;
+		sessionStorage.setItem( 'btnFiltrer-disabled', JSON.stringify( false ) );
 	}
 	catch (error)
 	{
@@ -93,7 +108,7 @@ btnFiltrer.addEventListener( 'click', () => {
 	window.location.href = `../filtrer.php`;
 })
 
-async function mettreAJourPage(data)
+function mettreAJourPage(data)
 {
 	if ( ! data.annees ) return;
 
@@ -107,7 +122,7 @@ async function mettreAJourPage(data)
 	btnAnnee.disabled = false;
 }
 
-async function mettreAJourStats( statistiques )
+function mettreAJourStats( statistiques )
 {
 	const cardDiplome = document.getElementById( 'card-diplome' );
 	const cardGenre   = document.getElementById( 'card-genre'   );
@@ -167,25 +182,25 @@ async function mettreAJourTab(candidats)
 
 const barreRch = document.getElementById('barre-recherche');
 
-barreRch.addEventListener('input', Recherche);
+if (barreRch)
+	barreRch.addEventListener('input', Recherche);
 
 function Recherche() {
-	const query = barreRch.value.toLowerCase();
-	const ligne = tableau.getElementsByTagName('tr');
+	const tableau = document.getElementById('tableau-data'); // récupéré dynamiquement
+	if (!tableau) return;
 
-	filtreLigne = Array.from(ligne).slice(1);
+	const query  = barreRch.value.toLowerCase();
+	const lignes = Array.from(tableau.getElementsByTagName('tr')).slice(1);
 
-	filtreLigne.forEach(l => {
-		const nom = l.cells[1].textContent.toLowerCase();
-		const prenom = l.cells[2].textContent.toLowerCase();
-		const civilite = l.cells[3].textContent.toLowerCase();
-		const profil = l.cells[4].textContent.toLowerCase();
+	lignes.forEach(l => {
+		const nom      = l.cells[1]?.textContent.toLowerCase() ?? '';
+		const prenom   = l.cells[2]?.textContent.toLowerCase() ?? '';
+		const civilite = l.cells[3]?.textContent.toLowerCase() ?? '';
+		const profil   = l.cells[4]?.textContent.toLowerCase() ?? '';
 
-		if (nom.includes(query) || prenom.includes(query) || civilite.includes(query) || profil.includes(query)) {
-			l.style.display = '';
-		} else {
-			l.style.display = 'none';
-		}
+		l.style.display = (nom.includes(query) || prenom.includes(query) ||
+			civilite.includes(query) || profil.includes(query))
+			? '' : 'none';
 	});
 }
 
@@ -194,13 +209,15 @@ const btnGroupe = document.getElementById('btnGrouper');
 btnGroupe.addEventListener('click', async() => {
 	const annee = anneeSelect.value;
 
-	if(groupeCache && groupeCache.annee === annee) {
+	if(groupeCache && groupeCache.annee === annee)
+	{
 		modeGrouper = !modeGrouper;
-		if(modeGrouper) {
-			afficherGroupes(data.groupes);
-		} else {
+
+		if (modeGrouper)
+			afficherGroupes(groupeCache.groupes);
+		else
 			btnAnnee.click();
-		}
+
 		return;
 	}
 

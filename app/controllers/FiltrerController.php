@@ -15,33 +15,45 @@ class FiltrerController extends Controller
 
 	public function filtrer()
 	{
-        $data = [];
-
-        if ( $_SERVER['REQUEST_METHOD'] == 'POST' )
+        if ($_SERVER['REQUEST_METHOD'] === 'POST')
         {
-            $data    = [];
-            $filtres = $_POST['filtres'];
+            $body    = file_get_contents('php://input');
+            $filtres = json_decode($body, true);
 
-            /* Requête SQL qui renvoie le tableau de candidats en fonction des filtres */
+            $candidats = $this->donneesService->getDonneesFromFiltres($filtres);
 
-            if ( $data['candidats'] )
-                $this->json( $data );
-            else
+            if ( empty($candidats) )
             {
-                $errors[] = "Aucun filtre n'est appliqué";
-                $data['errors'] = $errors;
+                $this->json(['erreur' => 'Aucun candidat ne correspond aux filtres.']);
+                return;
             }
+
+            // Stocker en session pour tableau.php
+            $_SESSION['candidats'] = $candidats;
+            $_SESSION['filtres']   = $filtres;
+
+            $this->json(['succes' => true, 'total' => count($candidats)]);
+            return;
         }
 
-		$this->view('filtrer', '', $data );
-	}
+        $this->view('filtrer', 'Filtrer');
+    }
 
-    public function recupererDonnees()
+    public function recupererDonneesFromAnnee()
     {
         $anneeDeb = $_SESSION['anneeCourante']['anneeDeb'];
         $anneeFin = $_SESSION['anneeCourante']['anneeFin'];
 
-        $data = $this->donneesService->getDonnees($anneeDeb, $anneeFin);
+        $data = $this->donneesService->getDonneesFromAnnee($anneeDeb, $anneeFin);
+
+        $this->json($data);
+    }
+
+    public function recupererDonneesFromTypeBac()
+    {
+        $typeBac = $_GET['typeBac'];
+
+        $data = $this->donneesService->getDonneesFromTypeBac( $typeBac );
 
         $this->json($data);
     }

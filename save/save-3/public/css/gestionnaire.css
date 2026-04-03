@@ -1,0 +1,76 @@
+/* ============================================================
+   TABLEAU
+============================================================ */
+
+#excel-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+#excel-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#excel-table thead tr {
+    border-bottom: 1.5px solid #185FA5;
+}
+
+#excel-table th {
+    padding: 13px 16px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #185FA5;
+    background: #E6F1FB;
+    white-space: nowrap;
+}
+
+#excel-table td {
+    padding: 13px 16px;
+    color: var(--black);
+    border-bottom: 0.5px solid var(--border-s);
+    white-space: nowrap;
+}
+
+#excel-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+#excel-table tbody tr:hover td {
+    background: #E6F1FB;
+}
+
+/* ============================================================
+   PAGINATION
+============================================================ */
+
+#paginationBar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 1.5rem;
+}
+
+#pageInfo {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-family: var(--font-body);
+    min-width: 120px;
+    text-align: center;
+}
+
+/* ============================================================
+   BOUTON CONFIRMATION
+============================================================ */
+
+#confirm-btn-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+}

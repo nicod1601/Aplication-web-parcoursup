@@ -1,0 +1,105 @@
+
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+
+    background-color: rgba(229, 235, 255, 0.94);
+
+    background-image:
+            radial-gradient(at 0% 0%, rgba(0, 51, 102, 0.8) 0px, transparent 50%),   /* Top Left: Deep Navy */
+            radial-gradient(at 100% 0%, rgba(70, 90, 110, 0.4) 0px, transparent 50%), /* Top Right: Slate Gray */
+            radial-gradient(at 100% 100%, rgba(186, 12, 47, 0.2) 0px, transparent 50%),/* Bottom Right: Red Glow */
+            radial-gradient(at 0% 100%, rgba(0, 33, 71, 0.9) 0px, transparent 50%);  /* Bottom Left: Dark Base */
+}
+
+
+.connexion-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 40px;
+    width: 380px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    color: white;
+}
+
+
+.input-group {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    background: white;
+    border: none;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+
+.btn-connect {
+    width: 100%;
+    padding: 14px;
+    background: #BA0C2F;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.3s;
+}
+
+.btn-connect:hover {
+    background: #990a26;
+}
+
+/* Subtitle styling */
+.subtitle {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: -10px;
+    margin-bottom: 30px;
+}
+
+/* Checkbox and Footer styling */
+.options-row {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 25px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.card-footer {
+    margin-top: 25px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.card-footer a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.card-footer a:hover {
+    text-decoration: underline;
+}

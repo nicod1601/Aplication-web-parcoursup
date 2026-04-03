@@ -1,18 +1,6 @@
-function listeAnnee(){
-	const annee = new Date().getFullYear();
-	const anneeSelect = document.getElementById('annee-select');
-	let options = '';
-	for(let cpt = 0; cpt < 10; cpt++){
-		const startYear = annee + cpt;
-		const endYear = startYear + 1;
-		options += `<option value="${startYear}-${endYear}">${startYear} - ${endYear}</option>`;
-	}
-	anneeSelect.innerHTML = options;
-}
-
-listeAnnee();
-
-// Gestion du Menu
+// ============================================================
+// GESTION DU MENU
+// ============================================================
 const menuItems = document.querySelectorAll('.menu-item');
 menuItems[3].classList.add('active');
 
@@ -20,61 +8,78 @@ menuItems.forEach(item => {
 	item.addEventListener('click', () => {
 		menuItems.forEach(i => i.classList.remove('active'));
 		item.classList.add('active');
-
-		const page = item.getAttribute('href').substring(1);
-		window.location.href = `../../public/${page}`;
-
+		window.location.href = item.getAttribute('href');
 	});
 });
 
-// TableauS
-const fileInput = document.getElementById('file-input');
+// ============================================================
+// VARIABLES GLOBALES
+// ============================================================
+const fileInput          = document.getElementById('file-input');
 const confirmBtnContainer = document.getElementById('confirm-btn-container');
-const table = document.getElementById('excel-table');
+const table              = document.getElementById('excel-table');
+const paginationBar      = document.getElementById('paginationBar');
+const traitementText     = document.getElementById('traitement');
+const loadingOverlay     = document.getElementById('loading-overlay');
+
 const LIMITE_LIGNES = 25;
-const paginationBar = document.getElementById('paginationBar');
-const traitementText = document.getElementById('traitement');
-let excelData = [];
+let excelData   = [];
 let currentPage = 1;
 
 renderTable([]);
 
+// ============================================================
+// LECTURE DU FICHIER EXCEL
+// ============================================================
 fileInput.addEventListener('change', (e) => {
-	const file = e.target.files[0];
+	const file   = e.target.files[0];
+	if (!file) return;
+
 	const reader = new FileReader();
 
-	document.getElementById('loading-overlay').style.display = 'flex';
-	traitementText.textContent = 'Lecture du fichier en cours...';
+	loadingOverlay.style.display = 'flex';
+	traitementText.textContent   = 'Lecture du fichier en cours...';
 
 	reader.onload = (event) => {
-		const data = new Uint8Array(event.target.result);
+		const data     = new Uint8Array(event.target.result);
 		const workbook = XLSX.read(data, { type: 'array' });
 
 		const firstSheetName = workbook.SheetNames[0];
-		const worksheet = workbook.Sheets[firstSheetName];
+		const worksheet      = workbook.Sheets[firstSheetName];
 
-		excelData = XLSX.utils.sheet_to_json(worksheet);
+		excelData   = XLSX.utils.sheet_to_json(worksheet);
 		currentPage = 1;
 		updateTable();
 
-		document.getElementById('loading-overlay').style.display = 'none';
+		// Afficher le nom du fichier
+		const fileNameEl = document.getElementById('file-name');
+		if (fileNameEl) fileNameEl.textContent = file.name;
+
+		loadingOverlay.style.display = 'none';
+	};
+
+	reader.onerror = () => {
+		loadingOverlay.style.display = 'none';
+		alert('Erreur lors de la lecture du fichier.');
 	};
 
 	reader.readAsArrayBuffer(file);
 });
 
-function renderTable(data){
+// ============================================================
+// RENDU DU TABLEAU
+// ============================================================
+function renderTable(data) {
+	table.innerHTML = '';
 
-	table.innerHTML = "";
-
-	if(!data || data.length === 0) {
+	if (!data || data.length === 0) {
 		table.innerHTML = `
 			<thead>
 				<tr><th colspan="100">AUCUNE DONNÉE</th></tr>
 			</thead>
 			<tbody>
 				<tr>
-					<td colspan="100" style="text-align:center; padding: 30px; color: gray; font-style: italic;">
+					<td colspan="100" style="text-align:center;padding:30px;color:gray;font-style:italic;">
 						📭 Aucune donnée à afficher — importez un fichier Excel
 					</td>
 				</tr>
@@ -83,117 +88,241 @@ function renderTable(data){
 		return;
 	}
 
+	const headers    = Object.keys(data[0]);
+	const thead      = document.createElement('thead');
 	const ligneTitre = document.createElement('tr');
-	const titre = document.createElement('thead');
 
-	const headers = Object.keys(data[0]);
 	headers.forEach(header => {
-		const th = document.createElement('th');
+		const th       = document.createElement('th');
 		th.textContent = header;
 		ligneTitre.appendChild(th);
 	});
-	titre.appendChild(ligneTitre);
-	table.appendChild(titre);
+	thead.appendChild(ligneTitre);
+	table.appendChild(thead);
 
-	const ligne = document.createElement('tbody');
+	const tbody = document.createElement('tbody');
 	data.forEach(row => {
 		const tr = document.createElement('tr');
 		headers.forEach(header => {
-			const td = document.createElement('td');
-			td.textContent = row[header] || '';
+			const td       = document.createElement('td');
+			td.textContent = row[header] ?? '';
 			tr.appendChild(td);
 		});
-		ligne.appendChild(tr);
+		tbody.appendChild(tr);
 	});
-	table.appendChild(ligne);
-
+	table.appendChild(tbody);
 }
 
-function paginationTable(data){
-	if(data == null)return;
-	const totalPage = Math.ceil(data.length / LIMITE_LIGNES);
-	let numPage = 1;
-
-}
-
-function updateTable(){
-	const start = (currentPage - 1) * LIMITE_LIGNES;
-	const end = start + LIMITE_LIGNES;
+// ============================================================
+// MISE À JOUR DU TABLEAU AVEC PAGINATION
+// ============================================================
+function updateTable() {
+	const start    = (currentPage - 1) * LIMITE_LIGNES;
+	const end      = start + LIMITE_LIGNES;
 	const pageData = excelData.slice(start, end);
+
 	renderTable(pageData);
 
 	const totalPages = Math.ceil(excelData.length / LIMITE_LIGNES) || 1;
-	document.getElementById('dossier-count').textContent = `${excelData.length} dossiers enregistrés`;
 
-	confirmBtnContainer.innerHTML = `<button class="btn btn-primary" id="confirm-btn">Confirmer l'importation</button>`;
+	document.getElementById('dossier-count').textContent =
+		`${excelData.length} dossier${excelData.length > 1 ? 's' : ''} chargé${excelData.length > 1 ? 's' : ''}`;
 
+	// Bouton de confirmation
+	confirmBtnContainer.innerHTML = `
+		<button class="btn btn-primary" id="confirm-btn">
+			Confirmer l'importation (${excelData.length} lignes)
+		</button>
+	`;
+
+	// Pagination
 	paginationBar.innerHTML = `
-		<button class="btn btn-secondary" id="prevPage" ${currentPage === 1 ? 'disabled' : ''}>Précédent</button>
-		<span id="pageInfo">Page ${currentPage} sur ${totalPages}</span>
-		<button class="btn btn-secondary" id="nextPage" ${currentPage === totalPages ? 'disabled' : ''}>Suivant</button>
+		<button class="btn btn-secondary" id="prevPage" ${currentPage === 1 ? 'disabled' : ''}>
+			← Précédent
+		</button>
+		<span id="pageInfo" style="font-size:0.85rem;color:var(--muted);">
+			Page ${currentPage} / ${totalPages}
+		</span>
+		<button class="btn btn-secondary" id="nextPage" ${currentPage >= totalPages ? 'disabled' : ''}>
+			Suivant →
+		</button>
 	`;
 }
 
+// ============================================================
+// PAGINATION
+// ============================================================
 paginationBar.addEventListener('click', (e) => {
+	const totalPages = Math.ceil(excelData.length / LIMITE_LIGNES);
+
 	if (e.target.id === 'prevPage' && currentPage > 1) {
-		currentPage--; updateTable();
-	} else if (e.target.id === 'nextPage' && currentPage < Math.ceil(excelData.length / LIMITE_LIGNES)) {
-		currentPage++; updateTable();
+		currentPage--;
+		updateTable();
+	} else if (e.target.id === 'nextPage' && currentPage < totalPages) {
+		currentPage++;
+		updateTable();
 	}
 });
 
-// Utilisation de la délégation d'événement sur le conteneur
+// ============================================================
+// CONFIRMATION ET IMPORT
+// ============================================================
 confirmBtnContainer.addEventListener('click', async (e) => {
-	if (e.target && e.target.id === 'confirm-btn') {
+	if (!e.target || e.target.id !== 'confirm-btn') return;
 
 	if (!excelData || excelData.length === 0) {
 		alert("Veuillez d'abord choisir un fichier.");
 		return;
 	}
 
-	console.log("Données envoyées :", excelData.length, "lignes", excelData[0]);
-
-	const anneeSelect = document.getElementById('annee-select');
+	const anneeSelect      = document.getElementById('annee-select');
 	const selectedYearText = anneeSelect.options[anneeSelect.selectedIndex].text;
 
-	if (!confirm(`Voulez-vous vraiment importer ${excelData.length} lignes pour l'année scolaire ${selectedYearText} ?`)) {
+	if (!confirm(`Voulez-vous importer ${excelData.length} lignes pour l'année scolaire ${selectedYearText} ?`)) {
 		return;
 	}
 
+	// Supprimer un éventuel rapport précédent
+	const ancienRapport = document.getElementById('rapport-import');
+	if (ancienRapport) ancienRapport.remove();
 
+	loadingOverlay.style.display = 'flex';
+	traitementText.textContent   = 'Envoi en cours...';
 
 	try {
-
-		document.getElementById('loading-overlay').style.display = 'flex';
-		traitementText.textContent = 'Envoi en cours...';
-
 		const response = await fetch('/import.php', {
-			method: 'POST',
+			method:  'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
+			body:    JSON.stringify({
 				excelData: excelData,
-				annee: document.getElementById('annee-select').value
-			})
+				annee:     anneeSelect.value,
+			}),
 		});
 
 		const result = await response.json();
+		loadingOverlay.style.display = 'none';
+
 		if (result.success) {
-			document.getElementById('loading-overlay').style.display = 'none';
-			alert("Succès : " + result.message);
+			afficherRapportImport(result);
 		} else {
-			alert("Erreur : " + result.error);
+			alert('Erreur : ' + result.error);
 		}
+
 	} catch (error) {
+		loadingOverlay.style.display = 'none';
 		console.error("Erreur d'envoi :", error);
-		alert("Erreur lors de la communication avec le serveur.");
-	}
+		alert('Erreur lors de la communication avec le serveur.');
 	}
 });
 
+// ============================================================
+// RAPPORT D'IMPORT
+// ============================================================
+function afficherRapportImport(result) {
+	const nbIgnorees = result.nbIgnorees ?? 0;
 
-//selection Annee
-const anneeSelect = document.getElementById('annee-select');
-anneeSelect.addEventListener('change', () => {
-	const selectedYear = anneeSelect.value;
-	console.log("Année sélectionnée :", selectedYear);
+	let html = `
+		<div id="rapport-import" style="margin-top:1.5rem;">
+			<div style="
+				padding: 12px 16px;
+				background: var(--white);
+				border: 1.5px solid var(--navy);
+				border-radius: ${nbIgnorees > 0 ? '8px 8px 0 0' : '8px'};
+				display: flex;
+				align-items: center;
+				gap: 16px;
+			">
+				<span style="font-size:0.85rem;font-weight:600;">
+					✅ ${result.message}
+				</span>
+				${nbIgnorees > 0 ? `
+					<span style="
+						color: var(--red);
+						font-size: 0.8rem;
+						font-weight: 600;
+					">
+						⚠️ ${nbIgnorees} ligne${nbIgnorees > 1 ? 's' : ''} ignorée${nbIgnorees > 1 ? 's' : ''}
+					</span>
+				` : `
+					<span style="color:#3b6d11;font-size:0.8rem;">
+						Aucune ligne ignorée
+					</span>
+				`}
+			</div>
+	`;
+
+	if (nbIgnorees > 0) {
+		html += `
+			<div style="
+				max-height: 320px;
+				overflow-y: auto;
+				border: 1.5px solid var(--navy);
+				border-top: none;
+				border-radius: 0 0 8px 8px;
+			">
+				<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+					<thead>
+						<tr style="background:var(--blue-light);position:sticky;top:0;z-index:1;">
+							<th style="padding:8px 12px;text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--navy);">
+								Ligne Excel
+							</th>
+							<th style="padding:8px 12px;text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--navy);">
+								Candidat
+							</th>
+							<th style="padding:8px 12px;text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--navy);">
+								Raison(s)
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+		`;
+
+		result.lignesIgnorees.forEach((l, index) => {
+			const bgColor = index % 2 === 0 ? 'var(--white)' : 'var(--blue-sky)';
+			html += `
+				<tr style="border-bottom:1px solid var(--blue-light);background:${bgColor};">
+					<td style="padding:6px 12px;color:var(--muted);font-weight:600;">
+						${l.ligne}
+					</td>
+					<td style="padding:6px 12px;">
+						${escapeHtml(l.nom)}
+					</td>
+					<td style="padding:6px 12px;color:var(--red);">
+						${l.erreurs.map(e => `<span>• ${escapeHtml(e)}</span>`).join('<br>')}
+					</td>
+				</tr>
+			`;
+		});
+
+		html += `
+					</tbody>
+				</table>
+			</div>
+		`;
+	}
+
+	html += `</div>`;
+
+	confirmBtnContainer.insertAdjacentHTML('afterend', html);
+}
+
+// ============================================================
+// SÉLECTION DE L'ANNÉE
+// ============================================================
+document.getElementById('annee-select').addEventListener('change', () => {
+	const ancienRapport = document.getElementById('rapport-import');
+	if (ancienRapport) ancienRapport.remove();
 });
+
+// ============================================================
+// UTILITAIRES
+// ============================================================
+function escapeHtml(str) {
+	if (!str) return '';
+	return String(str)
+		.replace(/&/g,  '&amp;')
+		.replace(/</g,  '&lt;')
+		.replace(/>/g,  '&gt;')
+		.replace(/"/g,  '&quot;')
+		.replace(/'/g,  '&#39;');
+}

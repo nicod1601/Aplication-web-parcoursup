@@ -32,9 +32,10 @@
 				</div>
 			</div>
 			<div class="stat-item" >
-				<select name="annee" id="annee-select" class="filter-select">
-					<option value="2025-2026">2025 - 2026</option>
-					<option value="2024-2025">2024 - 2025</option>
+				<select id="annee-select" name="annee">
+					{% for annee in annees %}
+						<option value="{{ annee.value }}">{{ annee.text }}</option>
+					{% endfor %}
 				</select>
 			</div>
 			<div class="stat-item" >
