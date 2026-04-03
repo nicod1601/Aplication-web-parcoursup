@@ -2,14 +2,14 @@
 // COULEURS PAR SÉRIE DE BAC
 // ============================================================
 const SERIE_COLORS = {
-	'Générale':               '#3B82F6', // bleu
-	'STI2D':                  '#EF4444', // rouge
-	'STMG':                   '#F59E0B', // orange
-	'ST2S':                   '#10B981', // vert
-	'STL':                    '#8B5CF6', // violet
-	'STAV':                   '#06B6D4', // cyan
-	'STD2A':                  '#EC4899', // rose
-	'Bac Professionnel':      '#84CC16', // vert clair
+	'Générale':               '#3B82F6',
+	'STI2D':                  '#EF4444',
+	'STMG':                   '#F59E0B',
+	'ST2S':                   '#10B981',
+	'STL':                    '#8B5CF6',
+	'STAV':                   '#06B6D4',
+	'STD2A':                  '#EC4899',
+	'Bac Professionnel':      '#84CC16',
 	'Bac Professionnel Agricole': '#84CC16',
 };
 
@@ -89,9 +89,9 @@ async function chargerCarte(annee) {
 		document.getElementById('legende-block').style.display = 'block';
 		document.getElementById('stats-block').style.display   = 'block';
 		document.getElementById('filter-bar').style.display    = 'flex';
-		document.getElementById('table-wrapper').style.display = 'block';
+		//document.getElementById('table-wrapper').style.display = 'block';
 
-		mettreAJourTableau(allCandidats);
+		//mettreAJourTableau(allCandidats);
 
 	} catch (err) {
 		console.error('Erreur carte:', err);
@@ -148,7 +148,7 @@ function afficherMarkers() {
 				const communeCandidats = allCandidats.filter(
 					x => x.nomcommu === c.nomcommu && seriesVisible[x.codeseriedip || x.libseriedip]
 				);
-				mettreAJourTableau(communeCandidats, `Candidats de ${c.nomcommu}`);
+				//mettreAJourTableau(communeCandidats, `Candidats de ${c.nomcommu}`);
 			});
 
 			marker.addTo(layerGroup);
@@ -245,8 +245,8 @@ function mettreAJourVisibilite() {
 	});
 
 	// Mettre à jour le tableau avec les candidats visibles
-	const visibles = allCandidats.filter(c => seriesVisible[c.codeseriedip]);
-	mettreAJourTableau(visibles);
+	//const visibles = allCandidats.filter(c => seriesVisible[c.codeseriedip]);
+	//mettreAJourTableau(visibles);
 }
 
 // ============================================================
@@ -282,9 +282,7 @@ window.addEventListener('load', async () => {
 				opt.textContent = a.value;
 				select.appendChild(opt);
 			});
-
-			// Charger automatiquement la première année
-			chargerCarte(data.annees[0].value);
+			//chargerCarte(data.annees[0].value);
 		}
 	} catch (err) {
 		console.error('Erreur init:', err);

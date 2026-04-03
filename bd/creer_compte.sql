@@ -11,7 +11,7 @@ drop table if exists Compte cascade;
 
 -- Création de la table Compte
 create table Compte(
-    idCompte     int          primary key           ,
+    idCompte     serial          primary key        ,
     nomCompte    varchar(50)  not null              ,
     prenomCompte varchar(50)  not null              ,
     emailCompte  varchar(100) not null              ,

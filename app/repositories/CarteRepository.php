@@ -7,7 +7,6 @@ class CarteRepository
 {
 	private $pdo;
 
-	// Coordonnées approximatives par département (centroïde)
 	private const DEPT_COORDS = [
 		'01' => [46.200, 5.227],   '02' => [49.567, 3.617],   '03' => [46.340, 3.169],
 		'04' => [44.092, 6.236],   '05' => [44.661, 6.353],   '06' => [43.938, 7.122],
@@ -41,8 +40,59 @@ class CarteRepository
 		'87' => [45.835, 1.262],   '88' => [48.200, 6.449],   '89' => [47.798, 3.572],
 		'90' => [47.638, 6.863],   '91' => [48.630, 2.229],   '92' => [48.855, 2.209],
 		'93' => [48.921, 2.482],   '94' => [48.777, 2.457],   '95' => [49.045, 2.113],
-		'971' => [16.265, -61.551],'972' => [14.641, -61.024],'973' => [3.934, -53.126],
-		'974' => [-21.115, 55.536],'976' => [-12.827, 45.166],
+		'971' => [16.265, -61.551], '972' => [14.641, -61.024], '973' => [3.934, -53.126],
+		'974' => [-21.115, 55.536], '976' => [-12.827, 45.166],
+	];
+
+	private const COUNTRY_COORDS = [
+		'Maroc'           => [31.791702, -7.092620],
+		'Algérie'         => [28.033886,  1.659626],
+		'Tunisie'         => [33.886917,  9.537499],
+		'Sénégal'         => [14.497401, -14.452362],
+		'Cameroun'        => [ 3.848030,  11.502075],
+		"Côte d'Ivoire"   => [ 7.539989,  -5.547080],
+		'Madagascar'      => [-18.766947, 46.869107],
+		'Congo'           => [-0.228021,  15.827659],
+		'Guinée'          => [ 9.945587,  -9.696645],
+		'Mali'            => [17.570692,  -3.996166],
+		'Liban'           => [33.854721,  35.862285],
+		'Belgique'        => [50.503887,   4.469936],
+		'Suisse'          => [46.818188,   8.227512],
+		'Luxembourg'      => [49.815273,   6.129583],
+		'Espagne'         => [40.463667,  -3.749220],
+		'Italie'          => [41.871940,  12.567380],
+		'Portugal'        => [39.399872,  -8.224454],
+		'Allemagne'       => [51.165691,  10.451526],
+		'Royaume-Uni'     => [55.378051,  -3.435973],
+		'États-Unis'      => [37.090240, -95.712891],
+		'Canada'          => [56.130366, -106.346771],
+		'Chine'           => [35.861660,  104.195397],
+		'Japon'           => [36.204824,  138.252924],
+		'Brésil'          => [-14.235004, -51.925280],
+		'Mexique'         => [23.634501,  -102.552784],
+		'Gabon'           => [-0.803689,   11.609444],
+		'Togo'            => [ 8.619543,    0.824782],
+		'Bénin'           => [ 9.307690,    2.315834],
+		'Burkina Faso'    => [12.364637,   -1.561593],
+		'Niger'           => [17.607789,    8.081666],
+		'Tchad'           => [15.454166,   18.732207],
+		'Mauritanie'      => [21.007890,  -10.940835],
+		'Djibouti'        => [11.825138,   42.590275],
+		'Comores'         => [-11.875001,  43.872219],
+		'Maurice'         => [-20.348404,  57.552152],
+		'Réunion'         => [-21.115141,  55.536384],
+		'Syrie'           => [34.802075,   38.996815],
+		'Maroc'           => [31.791702,   -7.092620],
+		'Éthiopie'        => [ 9.145000,   40.489673],
+		'Égypte'          => [26.820553,   30.802498],
+		'Israël'          => [31.046051,   34.851612],
+		'Arabie Saoudite' => [23.885942,   45.079162],
+		'Émirats Arabes Unis' => [23.424076, 53.847818],
+		'Russie'          => [61.524010,   105.318756],
+		'Pologne'         => [51.919438,   19.145136],
+		'Pays-Bas'        => [52.132633,    5.291266],
+		'Autriche'        => [47.516231,   14.550072],
+		'Grèce'           => [39.074208,   21.824312],
 	];
 
 	public function __construct()
@@ -50,10 +100,6 @@ class CarteRepository
 		$this->pdo = Repository::getInstance()->getPDO();
 	}
 
-	/**
-	 * Retourne tous les candidats d'une année avec leur série de bac et département,
-	 * pour affichage sur la carte.
-	 */
 	public function getCandidatsForCarte(int $anneeDeb, int $anneeFin): array
 	{
 		$stmt = $this->pdo->prepare("
@@ -83,7 +129,7 @@ class CarteRepository
 		$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 		foreach ($rows as &$row) {
-			$coords = $this->getCoords($row['codepost'] ?? '');
+			$coords = $this->getCoords($row['codepost'] ?? '', $row['pays'] ?? 'France');
 			$row['lat'] = $coords[0];
 			$row['lng'] = $coords[1];
 		}
@@ -91,9 +137,6 @@ class CarteRepository
 		return $rows;
 	}
 
-	/**
-	 * Retourne les séries de bac distinctes pour la légende.
-	 */
 	public function getSeriesForAnnee(int $anneeDeb, int $anneeFin): array
 	{
 		$stmt = $this->pdo->prepare("
@@ -107,9 +150,27 @@ class CarteRepository
 		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 
-	private function getCoords(string $codePost): array
+	private function getCoords(string $codePost, string $pays = 'France'): array
 	{
-		if (empty($codePost)) return [46.603354, 1.888334]; // centre France
+		// Pays étranger
+		if ($pays !== 'France') {
+			$hash = crc32($codePost . $pays);
+			$latOffset = (($hash % 100) / 100 - 0.5) * 2;
+			$lngOffset = ((($hash >> 8) % 100) / 100 - 0.5) * 2;
+
+			if (isset(self::COUNTRY_COORDS[$pays])) {
+				return [
+					self::COUNTRY_COORDS[$pays][0] + $latOffset,
+					self::COUNTRY_COORDS[$pays][1] + $lngOffset,
+				];
+			}
+
+			// Pays inconnu : centre du monde avec variation
+			return [20.0 + $latOffset, 10.0 + $lngOffset];
+		}
+
+		// France
+		if (empty($codePost)) return [46.603354, 1.888334];
 
 		// DOM-TOM
 		if (str_starts_with($codePost, '971')) return self::DEPT_COORDS['971'];
@@ -126,7 +187,6 @@ class CarteRepository
 
 		$deptCode = substr(str_pad($codePost, 5, '0', STR_PAD_LEFT), 0, 2);
 
-		// Légère variation aléatoire déterministe pour éviter la superposition
 		$hash = crc32($codePost);
 		$latOffset = (($hash % 100) / 100 - 0.5) * 0.4;
 		$lngOffset = ((($hash >> 8) % 100) / 100 - 0.5) * 0.4;
@@ -141,4 +201,3 @@ class CarteRepository
 		return [46.603354 + $latOffset, 1.888334 + $lngOffset];
 	}
 }
-

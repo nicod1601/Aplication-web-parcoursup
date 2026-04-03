@@ -59,7 +59,6 @@ class ImportRepository
 				ON CONFLICT (idTypeDip) DO NOTHING
 			");
 
-			// Formation : pas de code dans l'Excel, on utilise le libellé comme clé unique (serial en base)
 			$stmtFormation = $pdo->prepare("
 				INSERT INTO Formation (libFormation)
 				VALUES (:libFormation)
@@ -69,7 +68,6 @@ class ImportRepository
 				SELECT idFormation FROM Formation WHERE libFormation = :libFormation
 			");
 
-			// Filière : même approche
 			$stmtFiliere = $pdo->prepare("
 				INSERT INTO Filiere (libFiliere)
 				VALUES (:libFiliere)
@@ -163,9 +161,6 @@ class ImportRepository
 				$libTypeDip =       $row['Type Diplôme - Libellé'] ?? 'Inconnu';
 				$stmtTypeDiplome->execute([':idTypeDip' => $idTypeDip, ':libTypeDip' => $libTypeDip]);
 
-				// 4. Formation
-				// CORRECTION : la colonne Excel s'appelle 'Formation - Libellé (Saisie manuelle) 2024/2025'
-				//              il n'existe pas de 'Formation - Code' dans le fichier
 				$libFormation = $row['Formation - Libellé (Saisie manuelle) 2024/2025'] ?? 'Inconnue';
 				if (!isset($formationMap[$libFormation])) {
 					$stmtFormation->execute([':libFormation' => $libFormation]);
@@ -175,8 +170,6 @@ class ImportRepository
 				$idFormation = $formationMap[$libFormation];
 
 				// 5. Filière
-				// CORRECTION : la colonne Excel s'appelle 'Filiere (pour scolarité du supérieur)- Libellé 2024/2025'
-				//              il n'existe pas de 'Filière - Code' dans le fichier
 				$libFiliere = $row['Filiere (pour scolarité du supérieur)- Libellé 2024/2025'] ?? 'Inconnue';
 				if (!isset($filiereMap[$libFiliere])) {
 					$stmtFiliere->execute([':libFiliere' => $libFiliere]);
@@ -186,8 +179,6 @@ class ImportRepository
 				$idFiliere = $filiereMap[$libFiliere];
 
 				// 6. Spécialité
-				// CORRECTION : la colonne Excel s'appelle 'Spécialité / Mention - Libellé  2024/2025'
-				//              (pas 'Spécialité - Libellé' qui correspond à autre chose)
 				$libSpe = $row['Spécialité / Mention - Libellé  2024/2025'] ?? 'Inconnue';
 				if (!isset($speMap[$libSpe])) {
 					$pdo->prepare("
@@ -232,7 +223,6 @@ class ImportRepository
 				$idSerieDip = $serieMap[$codeSerieDip];
 
 				// 9. Candidat
-				// CORRECTION : noteDossier et commentaire ajoutés (présents dans l'Excel et en base)
 				$currentCandId = $candCounter++;
 				$stmtCandidat->execute([
 					':idCand'          => $currentCandId,
@@ -258,9 +248,6 @@ class ImportRepository
 				]);
 
 				// 10. Candidat_EnseignementSpecialite
-				// CORRECTION : la colonne 'Abandonnée - Code' n'existe pas dans l'Excel.
-				//              La colonne réelle est 'Enseignement De spécialité abandonné en Première'
-				//              qui contient le libellé de la spécialité abandonnée (ou vide si aucune).
 				$abandonneeLib = $row['Enseignement De spécialité abandonné en Première'] ?? '';
 				$abandonnee = !empty(trim((string)$abandonneeLib));
 

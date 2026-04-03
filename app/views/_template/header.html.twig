@@ -25,8 +25,10 @@
 			<a href="platforme.php" class="menu-item "><i class="bi bi-cpu"></i> Plateforme</a>
 			<a href="carte.php" class="menu-item"><i class="bi bi-map"></i> Map</a>
 			<a href="tableau.php" class="menu-item"><i class="bi bi-table"></i> Table</a>
-			<a href="gestionnaire.php" class="menu-item"><i class="bi bi-database"></i> Gestion Données</a>
-			<a href="creation.php" class="menu-item"><i class="bi bi-creation"></i> Création Compte</a>
+			{% if session.is_admin %}
+				<a href="gestionnaire.php" class="menu-item"><i class="bi bi-database"></i> Gestion Données</a>
+				<a href="creation.php" class="menu-item"><i class="bi bi-creation"></i> Création Compte</a>
+			{% endif %}
 		</nav>
 
 		<div class="sidebar-footer">
@@ -53,7 +55,7 @@
 				<button class="icon-btn">⚙️</button>
 				<div class="user-profile">
 					<img src="https://ui-avatars.com/api/?name=Olivia+Rhye&background=c7d9f8&color=0D1B3E" alt="Avatar">
-					<span class="user-name">Olivia Rhye</span>
+					<span class="user-name">{{ session.user_nom | default('Utilisateur') }} {{ session.user_prenom | default('') }}</span>
 				</div>
 			</div>
 		</header>

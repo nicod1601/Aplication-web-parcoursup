@@ -36,7 +36,6 @@ document.querySelector('.btn-password-generate')?.addEventListener('click', func
 
 let pendingAccounts = [];
 
-// 1. Bouton "Confirmer" : Ajoute le formulaire au tableau HTML
 document.querySelector('.btn-primary[type="button"]')?.addEventListener('click', function() {
     const nom = document.querySelector('input[name="nom"]').value;
     const prenom = document.querySelector('input[name="prenom"]').value;
@@ -48,13 +47,14 @@ document.querySelector('.btn-primary[type="button"]')?.addEventListener('click',
         return;
     }
 
-    // On ajoute l'objet au tableau JS (noms calqués sur votre table SQL)
+    const isAdmin = false;
+
     pendingAccounts.push({
         nomCompte: nom,
         prenomCompte: prenom,
         emailCompte: email,
         passCompte: pass,
-        isAdmin: false
+        isAdmin: isAdmin
     });
 
     renderTable(); // Met à jour l'affichage
@@ -67,15 +67,18 @@ function renderTable() {
     const tbody = document.querySelector('.accounts-table tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = ''; // On vide le tableau
+    tbody.innerHTML = '';
 
     pendingAccounts.forEach((acc, index) => {
         const row = `
                 <tr>
-                    <td>(En attente)</td>
                     <td>${acc.nomCompte}</td>
                     <td>${acc.prenomCompte}</td>
                     <td>${acc.emailCompte}</td>
+                    <td>••••••••</td>
+                    <td>
+                        <input type="checkbox" class="admin-checkbox" data-index="${index}" ${acc.isAdmin ? 'checked' : ''}>
+                    </td>
                     <td>
                         <button type="button" class="btn-outline" onclick="removeAccount(${index})">✖ Retirer</button>
                     </td>
@@ -83,16 +86,23 @@ function renderTable() {
             `;
         tbody.innerHTML += row;
     });
+
+    document.querySelectorAll('.admin-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const index = parseInt(this.dataset.index);
+            pendingAccounts[index].isAdmin = this.checked;
+        });
+    });
 }
 
-// 3. Fonction pour retirer un compte de la liste avant l'envoi
+
+// Retirer un compte de la liste avant l'envoi
 window.removeAccount = function(index) {
     pendingAccounts.splice(index, 1);
     renderTable();
 };
 
-// 4. Bouton "Enregistrer"
-// Note : Cible le bouton en bas de page
+// 4. Bouton "Enregistrer" : Envoie TOUT le tableau au PHP
 document.querySelector('.action-button-center .btn-primary')?.addEventListener('click', async function() {
     if (pendingAccounts.length === 0) {
         alert("Le tableau est vide. Ajoutez des comptes avant d'enregistrer.");
@@ -110,8 +120,8 @@ document.querySelector('.action-button-center .btn-primary')?.addEventListener('
 
         if (result.success) {
             alert(pendingAccounts.length + ' compte(s) créé(s) avec succès !');
-            pendingAccounts = []; // Vide la liste
-            renderTable(); // Vide le tableau HTML
+            pendingAccounts = [];
+            renderTable();
         } else {
             alert('Erreur technique : ' + result.error);
         }

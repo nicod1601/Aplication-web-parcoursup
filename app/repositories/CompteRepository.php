@@ -15,7 +15,7 @@ class CompteRepository
     public function create(Compte $compte)
     {
         $sql = "INSERT INTO compte (nomCompte, prenomCompte, emailCompte, passCompte, isAdmin) 
-            VALUES (:nomCompte, :prenomCompte, :emailCompte, :passCompte, :isAdmin) RETURNING id";
+        VALUES (:nomCompte, :prenomCompte, :emailCompte, :passCompte, :isAdmin) RETURNING idCompte";
 
         $stmt = $this->pdo->prepare($sql);
 
@@ -29,14 +29,14 @@ class CompteRepository
 
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($row && isset($row['id'])) {
-            $compte->setId((int) $row['id']);
+        if ($row && isset($row['idCompte'])) {
+            $compte->setId((int) $row['idCompte']);
         }
 
         return $compte;
     }
 
-	public function createCompteFromRow(array $row)
+    public function createCompteFromRow(array $row)
 	{
 		return new Compte(
 			isset($row['idcompte']) ? (int) $row['idcompte'] : (isset($row['id']) ? (int)$row['id'] : null),
