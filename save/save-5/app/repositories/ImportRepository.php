@@ -198,7 +198,7 @@ class ImportRepository
 				$idsEnsSpe     = [];
 
 				if (!$this->estVide($combinaison)) {
-					$specialites = preg_split('/[\/|]/', $combinaison, -1, PREG_SPLIT_NO_EMPTY);
+					$specialites = preg_split('/[\/|,]/', $combinaison, -1, PREG_SPLIT_NO_EMPTY);
 					$specialites = array_map('trim', $specialites);
 					$specialites = array_filter($specialites, fn($s) => !$this->estVide($s));
 

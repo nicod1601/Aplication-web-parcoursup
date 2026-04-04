@@ -29,6 +29,19 @@ window.addEventListener( 'load', async () => {
 			groupeCache = JSON.parse(cached);
 
 
+		/* Gestion des filtres */
+		const filtresAppliques = sessionStorage.getItem('filtresAppliques');
+
+		if (filtresAppliques)
+		{
+			sessionStorage.removeItem('filtresAppliques');
+
+			const reponse = await fetch('/sessionCandidats.php');
+			const data    = await reponse.json();
+
+			if (data.candidats) mettreAJourTab(data.candidats);
+		}
+
 		/* Gestion des statistiques lors d'un retour sur la page */
 		if ( sessionStorage.getItem('statistiques') )
 		{
@@ -46,12 +59,6 @@ window.addEventListener( 'load', async () => {
 		{
 			const btnFiltrerDisabled = JSON.parse(sessionStorage.getItem('btnFiltrer-disabled'));
 			btnFiltrer.disabled = btnFiltrerDisabled;
-		}
-
-		if ( sessionStorage.getItem('btnExport-disabled') )
-		{
-			const btnExportDisabled = JSON.parse(sessionStorage.getItem('btnExport-disabled'));
-			btnExport.disabled = btnExportDisabled;
 		}
 	}
 	catch (error)
@@ -93,10 +100,9 @@ btnAnnee.addEventListener( 'click', async  () => {
 		sessionStorage.setItem( 'candidats', JSON.stringify(data.candidats) );
 
 		btnFiltrer.disabled = false;
-		sessionStorage.setItem( 'btnFiltrer-disabled', JSON.stringify( btnFiltrer.disabled ) );
+		sessionStorage.setItem( 'btnFiltrer-disabled', JSON.stringify( false ) );
 
 		btnExport.disabled = false;
-		sessionStorage.setItem( 'btnExport-disabled', JSON.stringify( btnExport.disabled ) );
 	}
 	catch (error)
 	{
@@ -165,6 +171,7 @@ function mettreAJourStats( statistiques )
 
 function mettreAJourTab(candidats)
 {
+	// Initialisation des données globales pour la pagination et la recherche
 	allCandidats = candidats || [];
 	filteredCandidats = [...allCandidats];
 	currentPage = 1;
@@ -172,13 +179,6 @@ function mettreAJourTab(candidats)
 }
 
 function renderTable() {
-
-	/* Initialisation de la tête du tableau */
-	const tableauTete = document.getElementById( 'tableau-head' );
-
-
-
-	/* Initialisation du corps du tableau */
 	const tableauDonnees = document.getElementById('tableau-data');
 	if (!tableauDonnees) return;
 	

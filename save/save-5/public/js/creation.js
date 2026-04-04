@@ -35,8 +35,6 @@ document.querySelector('.btn-password-generate')?.addEventListener('click', func
 // ============================================================
 
 let pendingAccounts = [];
-const ROWS_PER_PAGE = 5;
-let currentPage = 1;
 
 document.querySelector('.btn-primary[type="button"]')?.addEventListener('click', function() {
     const nom = document.querySelector('input[name="nom"]').value;
@@ -59,29 +57,19 @@ document.querySelector('.btn-primary[type="button"]')?.addEventListener('click',
         isAdmin: isAdmin
     });
 
-    const totalPages = Math.max(1, Math.ceil(pendingAccounts.length / ROWS_PER_PAGE));
-    currentPage = totalPages;
-    renderTable();
+    renderTable(); // Met à jour l'affichage
     document.getElementById('createAccountForm').reset();
     document.querySelector('input[name="mot_de_passe"]').type = 'password';
 });
 
+// 2. Fonction pour dessiner les lignes dans le tableau HTML
 function renderTable() {
     const tbody = document.querySelector('.accounts-table tbody');
     if (!tbody) return;
 
     tbody.innerHTML = '';
 
-    // Calculate pagination boundaries
-    const totalPages = Math.max(1, Math.ceil(pendingAccounts.length / ROWS_PER_PAGE));
-    const start = (currentPage - 1) * ROWS_PER_PAGE;
-    const end = start + ROWS_PER_PAGE;
-    const paginatedItems = pendingAccounts.slice(start, end);
-
-    paginatedItems.forEach((acc, relativeIndex) => {
-        // Calculate the actual index in the main pendingAccounts array
-        const absoluteIndex = start + relativeIndex;
-
+    pendingAccounts.forEach((acc, index) => {
         const row = `
                 <tr>
                     <td>${acc.nomCompte}</td>
@@ -89,68 +77,32 @@ function renderTable() {
                     <td>${acc.emailCompte}</td>
                     <td>••••••••</td>
                     <td>
-                        <input type="checkbox" class="admin-checkbox" data-index="${absoluteIndex}" ${acc.isAdmin ? 'checked' : ''}>
+                        <input type="checkbox" class="admin-checkbox" data-index="${index}" ${acc.isAdmin ? 'checked' : ''}>
                     </td>
                     <td>
-                        <button type="button" class="btn-outline" onclick="removeAccount(${absoluteIndex})">✖ Retirer</button>
+                        <button type="button" class="btn-outline" onclick="removeAccount(${index})">✖ Retirer</button>
                     </td>
                 </tr>
             `;
         tbody.innerHTML += row;
     });
 
-    // Re-bind checkbox events
     document.querySelectorAll('.admin-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const index = parseInt(this.dataset.index);
             pendingAccounts[index].isAdmin = this.checked;
         });
     });
-
-    renderPagination(totalPages);
 }
 
-function renderPagination(totalPages) {
-    const container = document.getElementById('pagination');
-    if (!container) return;
 
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
-    }
-
-    let html = `<button class="btn-outline" ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">⟵ Previous</button>`;
-
-    for (let page = 1; page <= totalPages; page++) {
-        html += `<button class="btn-outline page-number ${page === currentPage ? 'active' : ''}" data-page="${page}">${page}</button>`;
-    }
-
-    html += `<button class="btn-outline" ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">Next ⟶</button>`;
-
-    container.innerHTML = html;
-
-    container.querySelectorAll('button[data-page]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetPage = parseInt(btn.dataset.page, 10);
-            if (!Number.isNaN(targetPage) && targetPage >= 1 && targetPage <= totalPages) {
-                currentPage = targetPage;
-                renderTable();
-            }
-        });
-    });
-}
-
+// Retirer un compte de la liste avant l'envoi
 window.removeAccount = function(index) {
     pendingAccounts.splice(index, 1);
-
-    const totalPages = Math.max(1, Math.ceil(pendingAccounts.length / ROWS_PER_PAGE));
-    if (currentPage > totalPages) {
-        currentPage = totalPages;
-    }
-
     renderTable();
 };
 
+// 4. Bouton "Enregistrer" : Envoie TOUT le tableau au PHP
 document.querySelector('.action-button-center .btn-primary')?.addEventListener('click', async function() {
     if (pendingAccounts.length === 0) {
         alert("Le tableau est vide. Ajoutez des comptes avant d'enregistrer.");

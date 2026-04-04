@@ -1,6 +1,31 @@
 /* ============================================================
    FILTRER PAGE - Styles spécifiques
 ============================================================ */
+#cardNote .filter-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#cardNote .filter-label {
+    min-width: 160px;
+}
+
+.filter-range-wrap {
+    flex: 1;
+    position: relative;
+}
+
+.filter-range-wrap input[type="range"] {
+    position: absolute;
+    width: 100%;
+    pointer-events: none;
+}
+
+.filter-range-wrap input[type="range"]::-webkit-slider-thumb {
+    pointer-events: all;
+}
+
 .filter-group h4 {
     font-size: 0.85rem;
     font-weight: 700;

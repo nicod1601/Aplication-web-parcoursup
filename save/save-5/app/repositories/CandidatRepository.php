@@ -11,40 +11,18 @@ class CandidatRepository
 		$this->pdo = Repository::getInstance()->getPDO();
 	}
 
-    public function getCandidatsFromAnnee($anneeDeb, $anneeFin): ?array
-    {
-        $stmtListe = $this->pdo->prepare("
-        SELECT 
-            cand.codeCand, cand.civilite, cand.profilCand, 
-            etab.nomEtab,
-            loc.nomCommu, loc.nomDept, loc.pays,
-            serDip.codeSerieDip, serDip.libSeripDip,
-            spe.libSpe,
-            -- Spécialités suivies (non abandonnées)
-            (SELECT es.libEnsSpe FROM Candidat_EnseignementSpecialite ces 
-             JOIN EnseignementSpecialite es ON ces.idEnsSpe = es.idEnsSpe 
-             WHERE ces.idCand = cand.idCand AND ces.abandonnee = false LIMIT 1 OFFSET 0) as speTerm1,
-            (SELECT es.libEnsSpe FROM Candidat_EnseignementSpecialite ces 
-             JOIN EnseignementSpecialite es ON ces.idEnsSpe = es.idEnsSpe 
-             WHERE ces.idCand = cand.idCand AND ces.abandonnee = false LIMIT 1 OFFSET 1) as speTerm2,
-            (SELECT es.libEnsSpe FROM Candidat_EnseignementSpecialite ces 
-             JOIN EnseignementSpecialite es ON ces.idEnsSpe = es.idEnsSpe 
-             WHERE ces.idCand = cand.idCand AND ces.abandonnee = false LIMIT 1 OFFSET 2) as speTerm3,
-            -- Spécialité abandonnée
-            (SELECT es.libEnsSpe FROM Candidat_EnseignementSpecialite ces 
-             JOIN EnseignementSpecialite es ON ces.idEnsSpe = es.idEnsSpe 
-             WHERE ces.idCand = cand.idCand AND ces.abandonnee = true LIMIT 1) as speAbandon,
-            cand.noteGlobale, cand.noteFicheAvenir, cand.noteLycee, cand.noteDossier, cand.commentaire 
-        FROM candidat AS cand
-             INNER JOIN etablissement AS etab ON etab.idEtab = cand.idEtab
-             INNER JOIN localisation AS loc ON loc.idLoc = etab.idLoc
-             INNER JOIN SerieDiplome AS serDip ON serDip.idSerieDip = cand.idSerieDip
-             LEFT JOIN Specialite AS spe ON spe.idSpe = cand.idSpe
-        WHERE cand.anneeDeb = ? AND cand.anneeFin = ?
-    ");
-        $stmtListe->execute([$anneeDeb, $anneeFin]);
-        return $stmtListe->fetchAll(PDO::FETCH_ASSOC);
-    }
+	public function getCandidatsFromAnnee($anneeDeb, $anneeFin): ?array
+	{
+		$stmtListe = $this->pdo->prepare("
+			SELECT codeCand, nomCand, prenomCand, civilite, profilCand
+			FROM candidat
+			WHERE anneeDeb = ? AND anneeFin = ?
+		");
+		$stmtListe->execute([$anneeDeb, $anneeFin]);
+		$candidats = $stmtListe->fetchAll(PDO::FETCH_ASSOC);
+
+		return $candidats;
+	}
 
 	public function getNombreTotalFromAnnee($anneeDeb, $anneeFin): ?int
 	{

@@ -1,15 +1,22 @@
+// Géocoder un code postal
+const res = await fetch('https://api-adresse.data.gouv.fr/search/?q=42000&limit=1&type=municipality');
+const data = await res.json();
+const lat = data.features[0].geometry.coordinates[1];
+const lng = data.features[0].geometry.coordinates[0];
+
+
 // ============================================================
 // COULEURS PAR SÉRIE DE BAC
 // ============================================================
 const SERIE_COLORS = {
-	'Générale':                   '#3B82F6',
-	'STI2D':                      '#EF4444',
-	'STMG':                       '#F59E0B',
-	'ST2S':                       '#10B981',
-	'STL':                        '#8B5CF6',
-	'STAV':                       '#06B6D4',
-	'STD2A':                      '#EC4899',
-	'Bac Professionnel':          '#84CC16',
+	'Générale':               '#3B82F6',
+	'STI2D':                  '#EF4444',
+	'STMG':                   '#F59E0B',
+	'ST2S':                   '#10B981',
+	'STL':                    '#8B5CF6',
+	'STAV':                   '#06B6D4',
+	'STD2A':                  '#EC4899',
+	'Bac Professionnel':      '#84CC16',
 	'Bac Professionnel Agricole': '#84CC16',
 };
 
@@ -17,19 +24,21 @@ function getColor(codeSerie) {
 	for (const [key, color] of Object.entries(SERIE_COLORS)) {
 		if (codeSerie && codeSerie.toLowerCase().includes(key.toLowerCase())) return color;
 	}
+	// Couleur de fallback déterministe
 	const hash = [...(codeSerie || 'X')].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-	const palette = ['#6366F1', '#F97316', '#14B8A6', '#A855F7', '#EAB308', '#64748B'];
+	const palette = ['#6366F1','#F97316','#14B8A6','#A855F7','#EAB308','#64748B'];
 	return palette[hash % palette.length];
 }
 
 // ============================================================
 // ÉTAT GLOBAL
 // ============================================================
-let map            = null;
-let allCandidats   = [];
-let allSeries      = [];
-let markersMap     = {};
-let seriesVisible  = {};
+let map = null;
+let allCandidats = [];
+let allSeries    = [];
+let markersMap   = {};
+let seriesVisible = {};
+let selectedMarkerCandidats = [];
 
 // ============================================================
 // INITIALISATION CARTE LEAFLET
@@ -55,13 +64,12 @@ function initMap() {
 // ============================================================
 async function chargerCarte(annee) {
 	document.getElementById('carte-loading').style.display = 'flex';
-	document.getElementById('loading-msg').textContent = 'Chargement des données...';
 
 	try {
 		const cacheKey = `carte_${annee}`;
-		const cached   = sessionStorage.getItem(cacheKey);
-		let data;
+		const cached = sessionStorage.getItem(cacheKey);
 
+		let data;
 		if (cached) {
 			data = JSON.parse(cached);
 		} else {
@@ -69,16 +77,13 @@ async function chargerCarte(annee) {
 			if (!res.ok) throw new Error('Erreur serveur');
 			data = await res.json();
 			if (!data.success) throw new Error(data.error || 'Erreur inconnue');
-
-			document.getElementById('loading-msg').textContent = 'Géocodage des adresses...';
-			data.candidats = await geocoderCandidats(data.candidats);
-
 			sessionStorage.setItem(cacheKey, JSON.stringify(data));
 		}
 
-		allCandidats  = data.candidats;
-		allSeries     = data.series;
+		allCandidats = data.candidats;
+		allSeries    = data.series;
 
+		// Initialiser visibilité
 		seriesVisible = {};
 		allSeries.forEach(s => seriesVisible[s.codeseriedip] = true);
 
@@ -91,6 +96,9 @@ async function chargerCarte(annee) {
 		document.getElementById('legende-block').style.display = 'block';
 		document.getElementById('stats-block').style.display   = 'block';
 		document.getElementById('filter-bar').style.display    = 'flex';
+		//document.getElementById('table-wrapper').style.display = 'block';
+
+		//mettreAJourTableau(allCandidats);
 
 	} catch (err) {
 		console.error('Erreur carte:', err);
@@ -101,126 +109,10 @@ async function chargerCarte(annee) {
 }
 
 // ============================================================
-// GÉOCODAGE VIA API ADRESSE.DATA.GOUV.FR
-// ============================================================
-
-// Coordonnées de fallback pour les pays étrangers les plus fréquents
-const PAYS_COORDS = {
-	'Maroc':              [31.79, -7.09],
-	'Algérie':            [28.03,  1.66],
-	'Tunisie':            [33.89,  9.54],
-	'Sénégal':            [14.50,-14.45],
-	'Cameroun':           [ 3.85, 11.50],
-	"Côte d'Ivoire":      [ 7.54, -5.55],
-	'Madagascar':         [-18.77, 46.87],
-	'Congo':              [-0.23,  15.83],
-	'Guinée':             [ 9.95,  -9.70],
-	'Mali':               [17.57,  -4.00],
-	'Liban':              [33.85,  35.86],
-	'Belgique':           [50.50,   4.47],
-	'Suisse':             [46.82,   8.23],
-	'Luxembourg':         [49.82,   6.13],
-	'Espagne':            [40.46,  -3.75],
-	'Italie':             [41.87,  12.57],
-	'Portugal':           [39.40,  -8.22],
-	'Allemagne':          [51.17,  10.45],
-	'Royaume-Uni':        [55.38,  -3.44],
-	'États-Unis':         [37.09, -95.71],
-	'Canada':             [56.13,-106.35],
-	'Chine':              [35.86, 104.20],
-	'Japon':              [36.20, 138.25],
-	'Brésil':             [-14.24,-51.93],
-	'Gabon':              [-0.80,  11.61],
-	'Togo':               [ 8.62,   0.82],
-	'Bénin':              [ 9.31,   2.32],
-	'Burkina Faso':       [12.36,  -1.56],
-};
-
-
-
-
-// ============================================================
-// GÉOCODAGE PRÉCIS (VILLE + CODE POSTAL + PAYS)
-// ============================================================
-
-async function geocoderAdresse(c) {
-	const query = `${c.nomcommu || ''} ${c.codepost || ''} ${c.pays || 'France'}`;
-
-	try {
-		const res = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&limit=1`);
-		const data = await res.json();
-
-		if (data.features && data.features.length > 0) {
-			const [lng, lat] = data.features[0].geometry.coordinates;
-			return [lat, lng];
-		}
-	} catch (e) {
-		console.warn('Erreur géocodage', e);
-	}
-
-	return null;
-}
-
-async function geocoderCandidats(candidats) {
-
-    // ✅ Candidats déjà géocodés en base → offset déterministe direct, pas d'appel API
-    const dejaCodes  = candidats.filter(c => c.lat != null && c.lng != null);
-    const aGeocoder  = candidats.filter(c => c.lat == null || c.lng == null);
-
-    dejaCodes.forEach(c => {
-        const offset = deterministicOffset(String(c.idcand || c.codecand));
-        c.lat = parseFloat(c.lat) + offset[0];
-        c.lng = parseFloat(c.lng) + offset[1];
-    });
-
-    // Le reste de ta logique existante sur aGeocoder uniquement
-    const etrangers = aGeocoder.filter(c => c.pays && c.pays !== 'France');
-    const francais  = aGeocoder.filter(c => !c.pays || c.pays === 'France');
-
-    // ... (ton code actuel pour etrangers et francais, inchangé)
-
-    return candidats;
-}
-
-// Parse la réponse CSV : retourne { codePostal: [lat, lng] }
-function parseCsvCoords(csvText) {
-	const lines   = csvText.trim().split('\n');
-	const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-	const idxCode = headers.indexOf('postcode');
-	const idxLat  = headers.indexOf('latitude');
-	const idxLng  = headers.indexOf('longitude');
-
-	if (idxCode === -1 || idxLat === -1 || idxLng === -1) return {};
-
-	const result = {};
-	for (let i = 1; i < lines.length; i++) {
-		const cols = lines[i].split(',');
-		const code = cols[idxCode]?.replace(/"/g, '').trim();
-		const lat  = parseFloat(cols[idxLat]);
-		const lng  = parseFloat(cols[idxLng]);
-		if (code && !isNaN(lat) && !isNaN(lng)) {
-			result[code] = [lat, lng];
-		}
-	}
-	return result;
-}
-
-// Offset déterministe basé sur une chaîne (évite que tous les candidats
-// d'un même CP se superposent exactement, tout en restant stable au rechargement)
-function deterministicOffset(str) {
-	let hash = 0;
-	for (let i = 0; i < (str || '').length; i++) {
-		hash = (hash * 31 + str.charCodeAt(i)) | 0;
-	}
-	const lat = ((hash & 0xFF) / 255 - 0.5) * 0.12;
-	const lng = (((hash >> 8) & 0xFF) / 255 - 0.5) * 0.12;
-	return [lat, lng];
-}
-
-// ============================================================
 // MARKERS LEAFLET
 // ============================================================
 function afficherMarkers() {
+	// Supprimer les anciens layers
 	Object.values(markersMap).forEach(lg => lg.remove());
 	markersMap = {};
 
@@ -233,18 +125,18 @@ function afficherMarkers() {
 	});
 
 	Object.entries(bySerie).forEach(([serie, candidats]) => {
-		const color      = getColor(serie);
+		const color = getColor(serie);
 		const layerGroup = L.layerGroup();
 
 		candidats.forEach(c => {
 			if (!c.lat || !c.lng) return;
 
 			const marker = L.circleMarker([parseFloat(c.lat), parseFloat(c.lng)], {
-				radius:      7,
-				fillColor:   color,
-				color:       '#ffffff',
-				weight:      1.5,
-				opacity:     1,
+				radius: 7,
+				fillColor: color,
+				color: '#ffffff',
+				weight: 1.5,
+				opacity: 1,
 				fillOpacity: 0.85,
 			});
 
@@ -252,11 +144,19 @@ function afficherMarkers() {
 				<div class="popup-carte">
 					<strong>${escHtml(c.nomcand)} ${escHtml(c.prenomcand)}</strong><br>
 					<span class="popup-serie" style="background:${color}20;color:${color};">${escHtml(c.libseriedip)}</span><br>
-					<small>📍 ${escHtml(c.nomcommu)} (${escHtml(c.nomdept)}) ${escHtml(c.ville)}</small><br>
+					<small>📍 ${escHtml(c.nomcommu)} (${escHtml(c.nomdept)})</small><br>
 					<small>📊 Note lycée : <strong>${parseFloat(c.notelycee || 0).toFixed(2)}</strong></small><br>
 					<small>⭐ Note globale : <strong>${parseFloat(c.noteglobale || 0).toFixed(2)}</strong></small>
 				</div>
 			`, { maxWidth: 240 });
+
+			marker.on('click', () => {
+				// Filtrer tous les candidats de la même commune
+				const communeCandidats = allCandidats.filter(
+					x => x.nomcommu === c.nomcommu && seriesVisible[x.codeseriedip || x.libseriedip]
+				);
+				//mettreAJourTableau(communeCandidats, `Candidats de ${c.nomcommu}`);
+			});
 
 			marker.addTo(layerGroup);
 		});
@@ -278,18 +178,20 @@ function afficherLegende() {
 		const count = allCandidats.filter(c => c.codeseriedip === s.codeseriedip).length;
 
 		const item = document.createElement('div');
-		item.className  = 'legende-item';
+		item.className = 'legende-item';
 		item.dataset.serie = s.codeseriedip;
-		item.innerHTML  = `
+		item.innerHTML = `
 			<span class="legende-dot" style="background:${color};"></span>
 			<span class="legende-lib">${escHtml(s.libseriedip)}</span>
 			<span class="legende-count">${count}</span>
 		`;
 
 		item.addEventListener('click', () => {
-			seriesVisible[s.codeseriedip] = !seriesVisible[s.codeseriedip];
+			const visible = seriesVisible[s.codeseriedip];
+			seriesVisible[s.codeseriedip] = !visible;
 			mettreAJourVisibilite();
 			item.classList.toggle('legende-item--off', !seriesVisible[s.codeseriedip]);
+			// Sync checkbox
 			const cb = document.querySelector(`#filter-checkboxes input[data-serie="${s.codeseriedip}"]`);
 			if (cb) cb.checked = seriesVisible[s.codeseriedip];
 		});
@@ -318,6 +220,7 @@ function afficherFilterBar() {
 		cb.addEventListener('change', () => {
 			seriesVisible[s.codeseriedip] = cb.checked;
 			mettreAJourVisibilite();
+			// Sync légende
 			const legItem = document.querySelector(`.legende-item[data-serie="${s.codeseriedip}"]`);
 			if (legItem) legItem.classList.toggle('legende-item--off', !cb.checked);
 		});
@@ -347,6 +250,10 @@ function mettreAJourVisibilite() {
 			if (map.hasLayer(layerGroup)) map.removeLayer(layerGroup);
 		}
 	});
+
+	// Mettre à jour le tableau avec les candidats visibles
+	//const visibles = allCandidats.filter(c => seriesVisible[c.codeseriedip]);
+	//mettreAJourTableau(visibles);
 }
 
 // ============================================================
@@ -354,41 +261,35 @@ function mettreAJourVisibilite() {
 // ============================================================
 function afficherStats() {
 	const container = document.getElementById('stats-container');
-	const total     = allCandidats.length;
-	const depts     = new Set(allCandidats.map(c => c.nomdept)).size;
+	const total = allCandidats.length;
+	const depts = new Set(allCandidats.map(c => c.nomdept)).size;
 
 	container.innerHTML = `
-		<div class="stat-mini">
-			<span class="stat-mini-val">${total}</span>
-			<span class="stat-mini-lib">candidats</span>
-		</div>
-		<div class="stat-mini">
-			<span class="stat-mini-val">${depts}</span>
-			<span class="stat-mini-lib">départements</span>
-		</div>
-		<div class="stat-mini">
-			<span class="stat-mini-val">${allSeries.length}</span>
-			<span class="stat-mini-lib">séries</span>
-		</div>
+		<div class="stat-mini"><span class="stat-mini-val">${total}</span><span class="stat-mini-lib">candidats</span></div>
+		<div class="stat-mini"><span class="stat-mini-val">${depts}</span><span class="stat-mini-lib">départements</span></div>
+		<div class="stat-mini"><span class="stat-mini-val">${allSeries.length}</span><span class="stat-mini-lib">séries</span></div>
 	`;
 }
+
 
 // ============================================================
 // SÉLECTEUR D'ANNÉE
 // ============================================================
 window.addEventListener('load', async () => {
 	try {
-		const res  = await fetch('/loadTableau.php');
-		const data = await res.json();
+		const res = await fetch('/carte_data.php?annee=0-0'); // trick pour avoir juste les années
+		const resAnnees = await fetch('/loadTableau.php');
+		const data = await resAnnees.json();
 
 		const select = document.getElementById('annee-select');
 		if (data.annees && data.annees.length > 0) {
 			data.annees.forEach(a => {
-				const opt       = document.createElement('option');
-				opt.value       = a.value;
+				const opt = document.createElement('option');
+				opt.value = a.value;
 				opt.textContent = a.value;
 				select.appendChild(opt);
 			});
+			//chargerCarte(data.annees[0].value);
 		}
 	} catch (err) {
 		console.error('Erreur init:', err);
@@ -406,7 +307,7 @@ function escHtml(str) {
 	if (!str) return '';
 	return String(str)
 		.replace(/&/g, '&amp;')
-		.replace(/</g,  '&lt;')
-		.replace(/>/g,  '&gt;')
-		.replace(/"/g,  '&quot;');
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;');
 }

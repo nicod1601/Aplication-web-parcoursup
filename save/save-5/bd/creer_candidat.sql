@@ -24,9 +24,7 @@ create table Localisation (
 	idLoc       int             primary key,
 	nomCommu    varchar(100)    not null,
 	nomDept     varchar(100)    not null,
-	pays        varchar(100)    not null,
-	lat         float,
-	lng         float
+	pays        varchar(100)    not null
 );
 
 -- Création de la table Etablissement
@@ -70,7 +68,7 @@ create table EnseignementSpecialite (
 -- Création de la table SerieDiplome
 create table SerieDiplome (
 	idSerieDip   serial          primary key,
-	codeSerieDip varchar(50)     not null unique,
+    codeSerieDip varchar(50)     not null unique,
 	libSerieDip  varchar(100)    not null
 );
 
