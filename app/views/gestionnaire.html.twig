@@ -16,7 +16,7 @@
 			</div>
 			<div class="ligne">
 				<div class="stat-item">
-					<h2 id="dossier-count">0 dossier enregistré</h2>
+					<h2 id="dossier-count"></h2>
 				</div>
 			</div>
 		</div>
@@ -38,15 +38,14 @@
 					{% endfor %}
 				</select>
 			</div>
-			<div class="stat-item" >
-				<button class="btn btn-primary">Importer un fichier</button>
-				<button class="btn btn-secondary">Mettre à jour</button>
-				<button class="btn btn-secondary">Supprimer</button>
+			<div class="btn-group" >
+				<button class="btn btn-primary"   id="import-btn">Importer un fichier</button>
+				<button class="btn btn-secondary" id="delete-btn">Supprimer</button>
 			</div>
 		</div>
 	</div>
 
-	<section class="page-body">
+	<section class="page-body" id="zone-fichier">
 		{# ZONE Fichier #}
 		<div class="card card-import">
 			<div class="card-header">
@@ -74,7 +73,7 @@
 
 
 	{# ZONE DE TRAVAIL (Tableaux, Cartes) #}
-	<section class="page-body">
+	<section class="page-body" id="zone-tableau">
 		<div class="hero-sub">Tableau</div>
 		
 		{# Exemple de contenu #}
@@ -92,6 +91,20 @@
 		</div>
 	</section>
 
+
+	<section class="page-body" id="zone-liste-fichiers" style="display:none;">
+		<div class="hero-sub">
+			Liste des fichiers
+			<div class="dots-group">
+				<button class="btn btn-secondary" id="delete-all-btn">Supprimer_tous</button>
+			</div>
+		</div>
+		<div class="content-placeholder" id="liste-fichiers-container">
+			<!-- Les fichiers seront affichés ici -->
+		</div>
+	</section>
+
+
 	<!-- Fenêtre de chargement -->
 	<div id="loading-overlay" style="display:none;">
 		<div class="loading-box">
@@ -102,4 +115,7 @@
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
+<script>
+	const initialFichiers = {{ fichiers|json_encode|raw }};
+</script>
 <script src="/js/gestionnaire.js"></script>

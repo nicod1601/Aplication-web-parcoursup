@@ -17,6 +17,7 @@ drop table if exists Specialite                      cascade;
 drop table if exists EnseignementSpecialite          cascade;
 drop table if exists Etablissement                   cascade;
 drop table if exists Localisation                    cascade;
+drop table if exists Fichier                        cascade;
 
 
 -- Création de la table Localisation
@@ -72,6 +73,14 @@ create table SerieDiplome (
 	libSerieDip  varchar(100)    not null
 );
 
+create table Fichier(
+	idFichier    serial          primary key,
+	nomFichier   varchar(255)    not null,
+	anneeDeb     int             not null,
+	anneeFin     int             not null,
+	UNIQUE (anneeDeb, anneeFin)
+);
+
 -- Création de la table Candidat
 create table Candidat (
 	idCand          int             primary key,
@@ -93,7 +102,9 @@ create table Candidat (
 	idTypeDip       int             not null references TypeDiplome  (idTypeDip),
 	idSerieDip      int             not null references SerieDiplome (idSerieDip),
 	idSpe           int             references Specialite   (idSpe      ),
-	idEtab          int             references Etablissement(idEtab     )
+	idEtab          int             references Etablissement(idEtab     ),
+	idFichier       int             not null references Fichier      (idFichier),
+	UNIQUE (codeCand, idFichier)
 );
 
 -- Création de la table Candidat_EnseignementSpecialite

@@ -22,11 +22,76 @@ const paginationBar       = document.getElementById('paginationBar');
 const traitementText      = document.getElementById('traitement');
 const loadingOverlay      = document.getElementById('loading-overlay');
 
+let allFichiers = typeof initialFichiers !== 'undefined' ? initialFichiers : [];
 const LIMITE_LIGNES = 25;
 let excelData   = [];
 let currentPage = 1;
 
 renderTable([]);
+
+// ============================================================
+// CARTE INFORMATION — Mise à jour
+// ============================================================
+function mettreAJourInformation({ nomFichier = null, nbLignes = null, annee = null } = {}) {
+	const el = document.getElementById('dossier-count');
+	if (!el) return;
+
+	if (nomFichier === null) {
+		el.innerHTML = `<span class="info-placeholder"></span>`;
+		return;
+	}
+
+	el.innerHTML = `
+		<div class="info-card">
+			<div class="info-item">
+				<span class="info-icon info-icon--file">📄</span>
+				<div>
+					<div class="info-label">Fichier</div>
+					<div class="info-value">${escapeHtml(nomFichier)}</div>
+				</div>
+			</div>
+			<div class="info-item">
+				<span class="info-icon info-icon--candidates">👥</span>
+				<div>
+					<div class="info-label">Candidats</div>
+					<div class="info-value info-value--candidates">${nbLignes !== null ? nbLignes : '—'}</div>
+				</div>
+			</div>
+			<div class="info-item">
+				<span class="info-icon info-icon--year">📅</span>
+				<div>
+					<div class="info-label">Année scolaire</div>
+					<div class="info-value info-value--year ${annee ? 'info-value--red' : 'info-value--muted'}">
+						${annee ? annee : 'Non détectée'}
+					</div>
+				</div>
+			</div>
+		</div>
+	`;
+}
+
+// ============================================================
+// DÉTECTION DE L'ANNÉE DANS LES EN-TÊTES
+// ============================================================
+function detecterAnnee(headers) {
+	// Cherche un pattern AAAA/AAAA ou AAAA-AAAA dans les colonnes
+	const patterns = [
+		/(\d{4}\/\d{4})/,
+		/(\d{4}-\d{4})/,
+	];
+	const anneesTrouvees = new Set();
+
+	headers.forEach(header => {
+		patterns.forEach(pattern => {
+			const match = String(header).match(pattern);
+			if (match) anneesTrouvees.add(match[1]);
+		});
+	});
+
+	if (anneesTrouvees.size === 0) return null;
+	// Retourne la première année trouvée (normalisée avec tiret)
+	return [...anneesTrouvees][0].replace('/', '-');
+}
 
 // ============================================================
 // LECTURE DU FICHIER EXCEL
@@ -51,7 +116,25 @@ fileInput.addEventListener('change', (e) => {
 		currentPage = 1;
 		updateTable();
 
-		// Afficher le nom du fichier
+		const headers    = excelData.length > 0 ? Object.keys(excelData[0]) : [];
+		const annee      = detecterAnnee(headers);
+		const nomFichier = file.name;
+		const nbLignes   = excelData.length;
+
+		mettreAJourInformation({ nomFichier, nbLignes, annee });
+
+		if (annee) {
+			const anneeSelect = document.getElementById('annee-select');
+			const anneeNorm   = annee.replace('/', '-'); // "2024-2025"
+			for (let i = 0; i < anneeSelect.options.length; i++) {
+				if (anneeSelect.options[i].value === anneeNorm) {
+					anneeSelect.selectedIndex = i;
+					break;
+				}
+			}
+		}
+
+		// Afficher le nom du fichier dans la zone drop
 		const fileNameEl = document.getElementById('file-name');
 		if (fileNameEl) fileNameEl.textContent = file.name;
 
@@ -125,10 +208,6 @@ function updateTable() {
 
 	const totalPages = Math.ceil(excelData.length / LIMITE_LIGNES) || 1;
 
-	// Affiche le nombre de lignes lues dans le fichier (avant validation serveur)
-	document.getElementById('dossier-count').textContent =
-		`${excelData.length} dossier${excelData.length > 1 ? 's' : ''} chargé${excelData.length > 1 ? 's' : ''}`;
-
 	// Bouton de confirmation
 	confirmBtnContainer.innerHTML = `
 		<button class="btn btn-primary" id="confirm-btn">
@@ -136,7 +215,6 @@ function updateTable() {
 		</button>
 	`;
 
-	// Pagination
 	paginationBar.innerHTML = `
 		<button class="btn btn-secondary" id="prevPage" ${currentPage === 1 ? 'disabled' : ''}>
 			← Précédent
@@ -183,7 +261,6 @@ confirmBtnContainer.addEventListener('click', async (e) => {
 		return;
 	}
 
-	// Supprimer un éventuel rapport précédent
 	const ancienRapport = document.getElementById('rapport-import');
 	if (ancienRapport) ancienRapport.remove();
 
@@ -205,6 +282,11 @@ confirmBtnContainer.addEventListener('click', async (e) => {
 
 		if (result.success) {
 			afficherRapportImport(result);
+			mettreAJourInformation({
+				nomFichier: document.getElementById('file-name')?.textContent || '',
+				nbLignes:   result.lignesImportees,
+				annee:      anneeSelect.value,
+			});
 		} else {
 			alert('Erreur : ' + result.error);
 		}
@@ -223,13 +305,6 @@ function afficherRapportImport(result) {
 	const nbIgnorees  = result.nbIgnorees      ?? 0;
 	const nbImportees = result.lignesImportees ?? 0;
 	const nbFichier   = excelData.length;
-
-	// ✅ Mettre à jour le compteur "Information" avec le vrai nombre inséré en base
-	const dossierCount = document.getElementById('dossier-count');
-	if (dossierCount) {
-		dossierCount.textContent =
-			`${nbImportees} dossier${nbImportees > 1 ? 's' : ''} importé${nbImportees > 1 ? 's' : ''} en base`;
-	}
 
 	let html = `
 		<div id="rapport-import" style="margin-top:1.5rem;">
@@ -331,3 +406,69 @@ function escapeHtml(str) {
 		.replace(/"/g,  '&quot;')
 		.replace(/'/g,  '&#39;');
 }
+
+function renderFileList(fichiers) {
+	const container = document.getElementById('liste-fichiers-container');
+	if (!container) return;
+
+	if (!fichiers || fichiers.length === 0) {
+		container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted);">Aucun fichier dans la base de données.</div>`;
+		return;
+	}
+
+	container.innerHTML = fichiers.map(f => `
+		<div class="file-list-item">
+			<div class="file-info">
+				<span class="file-name">${escapeHtml(f.nom)}</span>
+				<span class="file-year">${f.annee}</span>
+			</div>
+			<div class="file-actions">
+				<button class="btn-text" id="voir-${f.id}">voir</button>
+				<span>|</span>
+				<button class="btn-text btn-text-danger" id="supr-${f.id}">supr</button>
+			</div>
+		</div>
+	`).join('');
+	
+}
+
+const btnVoir = document.getElementById('liste-fichiers-container');
+btnVoir.addEventListener('click', (e) => {
+
+});
+
+const btnSupprimerFichier = document.getElementById('liste-fichiers-container');
+btnSupprimerFichier.addEventListener('click', async (e) => {
+});
+
+
+// ============================================================
+// INITIALISATION - DES - PARTIES 
+// ============================================================
+const btnImporter = document.getElementById('import-btn');
+const btnSupprimer = document.getElementById('delete-btn');
+
+const zoneFichier = document.getElementById('zone-fichier');
+const zoneTableau = document.getElementById('zone-tableau');
+const zoneListe   = document.getElementById('zone-liste-fichiers');
+
+btnImporter.addEventListener('click', () => {
+
+	zoneFichier.style.display = 'block';
+	zoneTableau.style.display = 'block';
+	zoneListe.style.display = 'none';
+	btnSupprimer.classList.replace('btn-primary', 'btn-secondary');
+	btnImporter.classList.replace('btn-secondary', 'btn-primary');
+	
+});
+
+btnSupprimer.addEventListener('click', () => {
+	zoneFichier.style.display = 'none';
+	zoneTableau.style.display = 'none';
+	zoneListe.style.display = 'block';
+	btnImporter.classList.replace('btn-primary', 'btn-secondary');
+	btnSupprimer.classList.replace('btn-secondary', 'btn-primary');
+
+	// Affichage de la liste des fichiers
+	renderFileList(allFichiers);
+});

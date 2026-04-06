@@ -88,12 +88,12 @@ class ImportRepository
 					idCand, codeCand, nomCand, prenomCand, civilite, profilCand,
 					nvBoursCand, noteGlobale, noteFicheAvenir, noteLycee, noteDossier,
 					anneeDeb, anneeFin, commentaire,
-					idFormation, idFiliere, idTypeDip, idSerieDip, idSpe, idEtab
+					idFormation, idFiliere, idTypeDip, idSerieDip, idSpe, idEtab, idFichier
 				) VALUES (
 					:idCand, :codeCand, :nomCand, :prenomCand, :civilite, :profilCand,
 					:nvBoursCand, :noteGlobale, :noteFicheAvenir, :noteLycee, :noteDossier,
 					:anneeDeb, :anneeFin, :commentaire,
-					:idFormation, :idFiliere, :idTypeDip, :idSerieDip, :idSpe, :idEtab
+					:idFormation, :idFiliere, :idTypeDip, :idSerieDip, :idSpe, :idEtab, :idFichier
 				)
 				ON CONFLICT (idCand) DO UPDATE SET nomCand = EXCLUDED.nomCand
 			");
@@ -102,6 +102,33 @@ class ImportRepository
 				VALUES (:idCand, :idEnsSpe, :abandonnee)
 				ON CONFLICT (idCand, idEnsSpe) DO NOTHING
 			");
+
+
+			// Insertion du fichier
+			$stmtFichier = $pdo->prepare("
+				INSERT INTO Fichier (nomFichier, anneeDeb, anneeFin)
+				VALUES (:nomFichier, :anneeDeb, :anneeFin)
+				ON CONFLICT (anneeDeb, anneeFin) DO NOTHING
+			");
+
+			$stmtGetFichier = $pdo->prepare("
+				SELECT idFichier FROM Fichier
+				WHERE anneeDeb = :anneeDeb AND anneeFin = :anneeFin
+			");
+			$nomFichier = "Import $anneeDeb-$anneeFin";
+
+			$stmtFichier->execute([
+				':nomFichier' => $nomFichier,
+				':anneeDeb'   => $anneeDeb,
+				':anneeFin'   => $anneeFin,
+			]);
+
+			// Récupération de l'id
+			$stmtGetFichier->execute([
+				':anneeDeb' => $anneeDeb,
+				':anneeFin' => $anneeFin,
+			]);
+			$idFichier = (int)$stmtGetFichier->fetchColumn();
 
 			foreach ($excelData as $numeroLigne => $row) {
 
@@ -280,6 +307,7 @@ class ImportRepository
 					':idSerieDip'      => $idSerieDip,
 					':idSpe'           => $idSpe,
 					':idEtab'          => $idEtab,
+					':idFichier' => $idFichier,
 				]);
 
 				// 10. Candidat_EnseignementSpecialite

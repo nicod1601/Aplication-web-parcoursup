@@ -110,36 +110,6 @@
 }
 
 /* ============================================================
-   CORRECTION ZONE ANNÉE
-============================================================ */
-
-#annee-select {
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-.card .stat-item {
-    width: 100%;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.hero-sub {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-}
-
-.btn-group-right {
-    margin-left: auto;
-    display: flex;
-    gap: 10px;
-}
-
-/* ============================================================
    PAGINATION
 ============================================================ */
 

@@ -762,3 +762,168 @@ main {
     gap: 1rem;
   }
 }
+
+/* ============================================================
+   ANIMATIONS & TRANSITIONS
+============================================================ */
+
+/*==============================================================
+   Info-Card  
+==============================================================*/
+.info-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 6px 0;
+    width: 100%;
+    text-align: left;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.info-icon {
+    /* Base style for icons */
+    font-size: 1.2rem;
+}
+
+.info-icon--file {
+    font-size: 1.4rem;
+}
+
+.info-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-family: var(--font-body);
+}
+
+.info-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--black);
+    word-break: break-all;
+}
+
+.info-value--candidates {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--navy);
+    font-family: var(--font-display);
+}
+
+.info-value--year {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: var(--font-display);
+}
+
+.info-value--red {
+    color: var(--red);
+}
+
+.info-value--muted {
+    color: var(--muted);
+}
+
+.info-placeholder {
+    color: var(--muted);
+    font-size: 1rem;
+}
+
+/* ============================================================
+   ZONE ANNÉE
+============================================================ */
+
+#annee-select {
+    width: 100%;
+    max-width: 280px; /* Limite la largeur pour un meilleur rendu visuel */
+    margin-bottom: 5px;
+}
+
+.card .stat-item {
+    width: 100%;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centre le select et les boutons horizontalement */
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+}
+
+.hero-sub {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.btn-group {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 5px;
+    gap: 10px;
+}
+
+/* ============================================================
+   LISTE DES FICHIERS ENREGISTRÉS
+============================================================ */
+.file-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: var(--white);
+    border-bottom: 1.5px solid var(--blue-mid);
+    transition: background 0.2s;
+}
+
+.file-list-item:hover {
+    background: var(--blue-sky);
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    flex: 1;
+}
+
+.file-name {
+    font-weight: 600;
+    color: var(--navy);
+    min-width: 250px;
+}
+
+.file-year {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--red);
+}
+
+.file-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    color: var(--muted);
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 5px;
+}
+
+.btn-text:hover { color: var(--navy); }
+.btn-text-danger:hover { color: var(--red); }

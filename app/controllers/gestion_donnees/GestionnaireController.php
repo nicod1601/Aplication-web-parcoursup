@@ -2,14 +2,22 @@
 // app/controllers/GestionnaireController.php
 
 require_once '../app/core/Controller.php';
+require_once '../app/repositories/FichierRepository.php';
 
 class GestionnaireController extends Controller
 {
+
+	private FichierRepository $fichierRepository;
+
+	public function __construct()
+	{
+		$this->fichierRepository = new FichierRepository();
+	}
+
 	public function index(): void
 	{
 		$annees = [];
-		
-		// Génère les paires d'années de 2000-2001 à 2026-2027 (limite i à 2026)
+
 		for ($i = 2000; $i <= 2026; $i++) {
 			$debut = $i;
 			$fin = $i + 1;
@@ -19,8 +27,11 @@ class GestionnaireController extends Controller
 			];
 		}
 
+		$fichiers = $this->fichierRepository->getAllFichiers();
+
 		$this->view('gestionnaire', 'Gestion des données', [
-			'annees' => $annees
+			'annees' => $annees,
+			'fichiers' => $fichiers
 		]);
 	}
 }
