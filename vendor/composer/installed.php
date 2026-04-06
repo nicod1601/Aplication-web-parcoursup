@@ -3,7 +3,7 @@
         'name' => 'mon-projet/app',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '8b6c42f2eeb9aa925fa1f3b0b87681505e2a1241',
+        'reference' => '08ad827e3b18cb0858701a7c5646c89f9969dae8',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'mon-projet/app' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '8b6c42f2eeb9aa925fa1f3b0b87681505e2a1241',
+            'reference' => '08ad827e3b18cb0858701a7c5646c89f9969dae8',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

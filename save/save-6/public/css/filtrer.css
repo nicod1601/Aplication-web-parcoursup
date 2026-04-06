@@ -1,0 +1,56 @@
+/* ============================================================
+   FILTRER PAGE - Styles spécifiques
+============================================================ */
+.filter-group h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-body);
+}
+
+.filter-field[style*="margin-top"] {
+    margin-top: 0.6rem;
+}
+
+.card-error {
+    border: 2px solid #c0392b;
+    border-radius: 12px;
+    background-color: #fdf0ef;
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+.card-error-header {
+    background-color: #c0392b;
+    color: white;
+    font-weight: bold;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.error-list {
+    list-style: none;
+    margin: 0;
+    padding: 12px 20px;
+}
+
+.error-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #f0c0bc;
+    color: #922b21;
+    font-size: 0.95em;
+}
+
+.error-list li:last-child {
+    border-bottom: none;
+}
+
+.error-list li::before {
+    content: "→ ";
+    font-weight: bold;
+}

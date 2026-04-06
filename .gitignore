@@ -1,0 +1,21 @@
+# IDE
+.idea/
+.vscode/
+
+# Composer
+/vendor/
+composer.lock
+
+# PHP
+*.log
+*.cache
+*.tmp
+/config/
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
