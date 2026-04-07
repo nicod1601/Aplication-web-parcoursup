@@ -438,8 +438,72 @@ btnVoir.addEventListener('click', (e) => {
 });
 
 const btnSupprimerFichier = document.getElementById('liste-fichiers-container');
-btnSupprimerFichier.addEventListener('click', async (e) => {
+btnSupprimerFichier.addEventListener('click', (e) => {
+	if (e.target.classList.contains('btn-text-danger')) {
+		const idFichier = e.target.id.split('-')[1];
+		supprimerFichier(idFichier);
+	}
 });
+
+const btnsupprimerTout = document.getElementById('delete-all-btn');
+btnsupprimerTout.addEventListener('click', supprimerTout);
+
+
+async function supprimerTout() {
+	if (!confirm('⚠️ ATTENTION — Supprimer TOUS les candidats et fichiers de la base de données ?\n\nCette action est irréversible.')) return;
+	if (!confirm('Confirmer une seconde fois : supprimer TOUTE la base de données ?')) return;
+
+	loadingOverlay.style.display = 'flex';
+	traitementText.textContent   = 'Suppression totale en cours...';
+
+	try {
+		const res = await fetch('/delete.php?action=all', { method: 'POST' });
+		const data = await res.json();
+		loadingOverlay.style.display = 'none';
+
+		if (data.success) {
+			allFichiers = [];
+			renderFileList(allFichiers);
+			mettreAJourInformation({});
+			alert('✅ Base de données vidée avec succès.');
+		} else {
+			alert('Erreur : ' + data.error);
+		}
+	} catch (err) {
+		loadingOverlay.style.display = 'none';
+		alert('Erreur de communication avec le serveur.');
+	}
+}
+
+async function supprimerFichier(idFichier) {
+	const id = parseInt(idFichier);
+	
+	if (!confirm('⚠️ Supprimer ce fichier et tous les candidats associés ?\n\nCette action est irréversible.')) return;
+	
+	loadingOverlay.style.display = 'flex';
+	traitementText.textContent   = 'Suppression en cours...';
+	
+	try {
+		const res = await fetch(`/delete.php?action=one`, {
+			method:  'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body:    JSON.stringify({ id: id }),  // ← manquait dans ton code
+		});
+		const data = await res.json();
+		loadingOverlay.style.display = 'none';
+		
+		if (data.success) {
+			allFichiers = allFichiers.filter(f => parseInt(f.id) !== id);  // ← comparaison typée
+			renderFileList(allFichiers);
+			alert('✅ Fichier supprimé avec succès.');
+		} else {
+			alert('Erreur : ' + data.error);
+		}
+	} catch (err) {
+		loadingOverlay.style.display = 'none';
+		alert('Erreur de communication avec le serveur.');
+	}
+}
 
 
 // ============================================================
@@ -469,6 +533,6 @@ btnSupprimer.addEventListener('click', () => {
 	btnImporter.classList.replace('btn-primary', 'btn-secondary');
 	btnSupprimer.classList.replace('btn-secondary', 'btn-primary');
 
-	// Affichage de la liste des fichiers
-	renderFileList(allFichiers);
+	// S'assurer que la liste est à jour quand on clique sur l'onglet "Supprimer"
+	await fetchAndRenderAllFiles();
 });
