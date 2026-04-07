@@ -533,6 +533,5 @@ btnSupprimer.addEventListener('click', () => {
 	btnImporter.classList.replace('btn-primary', 'btn-secondary');
 	btnSupprimer.classList.replace('btn-secondary', 'btn-primary');
 
-	// S'assurer que la liste est à jour quand on clique sur l'onglet "Supprimer"
-	await fetchAndRenderAllFiles();
+	renderFileList(allFichiers);
 });
