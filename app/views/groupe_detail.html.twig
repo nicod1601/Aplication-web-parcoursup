@@ -1,0 +1,92 @@
+{% include '_template/header.html.twig' with {
+    title: 'Groupe | ParcourSUPPORT',
+    project_name: project_name | default('ParcourSUPPORT'),
+    additional_css: 'grouper.css'
+} %}
+
+<div class="ligne">
+    <div class="card-lg">
+            <div id="codeSerieDip" class="card-header">
+                {{ groupe }}
+            </div>
+
+            <div class="note-management-bar">
+                <div class="input-group">
+                    <label>Note de dossier globale :</label>
+                    <div class="editable-wrapper">
+                        <span id="noteDossierGroupe" contenteditable="true" class="note-editable-large"></span>
+                        <span class="unit">/ 20</span>
+                    </div>
+                </div>
+            </div>
+            <p id="noteError" style="color: var(--red); font-size: 0.8rem; margin-top: 5px; display: none;"></p>
+            <p class="help-text">La modification de cette note s'appliquera à tous les candidats listés ci-dessous.</p>
+
+            <div class="filter-actions">
+                <button id="btnRetour" class="btn btn-primary">Retour</button>
+                <button id="btnEnregistrer" class="btn btn-primary" disabled>Enregitrer vos modifications</button>
+            </div>
+    </div>
+</div>
+
+<section class="page-body">
+    <div class="ligne">
+        <div class="card-lg">
+            <div class="card-header">
+                TABLEAU
+                <div class="dots-group">
+                    <div class="dot-header"></div>
+                    <div class="dot-header red"></div>
+                    <div class="dot-header"></div>
+                </div>
+            </div>
+
+            {# Exemple de contenu #}
+            <div class="content-placeholder">
+                <table id='tableau-candidats' class="table table-striped">
+                    <thead id="tableau-head">
+                    <td>Code du candidat</td>
+                    <td>Nom et prénom du candidat</td>
+                    <td>Civilité du candidat</td>
+                    <td>Profil du candidat</td>
+                    <td>Code de la série du diplôme</td>
+                    <td>Note Globale</td>
+                    <td>Note Ficher Avenir</td>
+                    <td>Note Lycée</td>
+                    <td>Note de dossier</td>
+                    <td>Commentaire</td>
+                    </thead>
+                    <tbody id="tableau-data">
+                    <tr>
+                        <td colspan="100" style="text-align:center; padding: 30px; color: gray; font-style: italic;">
+                            📭 Aucune donnée à afficher — Pas de candidat à afficher
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="pagination-bar" id="paginationBar"></div>
+</section>
+
+
+<script>
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems[2].classList.add('active');
+
+    menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+            menuItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+
+            const page = item.getAttribute('href').substring(0);
+            window.location.href = `../../public/${page}`;
+
+        });
+    });
+</script>
+<script src="/js/groupe_detail.js"></script>
+
+{% include '_template/footer.html.twig' %}

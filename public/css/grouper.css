@@ -1,0 +1,153 @@
+#card-groupe {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px 15px;
+}
+
+.card-groupe-item {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-groupe-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(13, 27, 62, 0.1);
+}
+
+.card-groupe-item .card-header {
+    justify-content: space-between;
+}
+
+.card-groupe-item .header-title {
+    font-size: 0.65rem;
+    opacity: 0.8;
+}
+
+.card-body-groupe {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
+.groupe-icon-wrapper {
+    width: 50px;
+    height: 50px;
+    background-color: var(--blue-light);
+    border: 1px solid var(--blue-mid);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.groupe-icon {
+    font-size: 1.5rem;
+}
+
+.groupe-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: hidden;
+}
+
+.nom-groupe-editable {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--navy);
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin-left: -4px;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badge-origine {
+    font-size: 0.6rem;
+    align-self: flex-start;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-actions-groupe {
+    padding: 10px 20px;
+    border-top: var(--border-s);
+    background-color: #fcfdfe;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+}
+
+.note-management-bar {
+    background-color: var(--white);
+    padding: 15px 20px;
+    border-radius: 10px;
+    border: var(--border-s);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.input-group label {
+    font-weight: 600;
+    color: var(--navy);
+    font-size: 0.9rem;
+}
+
+.editable-wrapper {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg);
+    border: 1.5px solid var(--blue-mid);
+    border-radius: 6px;
+    padding: 5px 12px;
+    transition: all 0.2s ease;
+}
+
+.editable-wrapper:focus-within {
+    border-color: var(--navy);
+    background-color: var(--white);
+    box-shadow: 0 0 0 3px rgba(13, 27, 62, 0.1);
+}
+
+.note-editable-large {
+    font-family: var(--font-body);
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--navy);
+    min-width: 40px;
+    text-align: center;
+    outline: none;
+}
+
+/* L'unité /20 */
+.unit {
+    font-weight: 700;
+    color: var(--muted);
+    margin-left: 5px;
+    user-select: none;
+}
+
+.help-text {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin: 0;
+}

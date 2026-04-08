@@ -1,0 +1,45 @@
+{% include '_template/header.html.twig' with {
+    title: 'Groupe | ParcourSUPPORT',
+    project_name: project_name | default('ParcourSUPPORT'),
+    additional_css: 'grouper.css'
+} %}
+
+    <div class="ligne">
+        <div class="card-lg">
+            <div class="card-header">
+                Groupes
+                <div class="dots-group">
+                    <div class="dot-header"></div>
+                    <div class="dot-header red"></div>
+                    <div class="dot-header"></div>
+                </div>
+            </div>
+
+            <div id='card-groupe' class="ligne">
+
+            </div>
+        </div>
+    </div>
+    <div class="filter-actions">
+        <button id="btnRetour" class="btn btn-primary">Retour</button>
+        <button id="btnEnregistrer" class="btn btn-primary" disabled>Enregitrer vos modifications</button>
+    </div>
+
+<script>
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems[2].classList.add('active');
+
+    menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+            menuItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+
+            const page = item.getAttribute('href').substring(0);
+            window.location.href = `../../public/${page}`;
+
+        });
+    });
+</script>
+<script src="/js/grouper.js"></script>
+
+{% include '_template/footer.html.twig' %}
