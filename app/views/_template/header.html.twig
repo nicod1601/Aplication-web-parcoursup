@@ -52,14 +52,19 @@
 			{% endif %}
 
 			<div class="header-actions">
-				<button class="icon-btn">💡</button>
-				<button class="icon-btn">⚙️</button>
 				<div class="user-profile">
 					<img src="https://ui-avatars.com/api/?name=Olivia+Rhye&background=c7d9f8&color=0D1B3E" alt="Avatar">
 					<span class="user-name">{{ session.user_nom | default('Utilisateur') }} {{ session.user_prenom | default('') }}</span>
-					<a href="logout.php" class="ms-2 text-danger" title="Se déconnecter" style="font-size: 1.1rem;">
+					<a href="logout.php" class="ms-2 text-danger" title="Se déconnecter" style="font-size: 1.1rem;" id="btn-deco">
 						<i class="bi bi-box-arrow-right"></i>
 					</a>
 				</div>
 			</div>
 		</header>
+
+<script>
+	const btnDeco = document.getElementById('btn-deco');
+	btnDeco.addEventListener('click', function() {
+		sessionStorage.clear();
+	});
+</script>

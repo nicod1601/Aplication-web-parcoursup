@@ -13,8 +13,20 @@ class ExportController extends Controller {
     public function export()
     {
         try {
+            $annee = $_GET['annee'] ?? null;
             $repo = new CandidatRepository();
-            $data = $repo->getAllCandidats();
+
+            if ($annee !== null && $annee !== '') {
+                if (!preg_match('/^\d{4}-\d{4}$/', $annee)) {
+                    throw new InvalidArgumentException("Parametre annee invalide. Format attendu: YYYY-YYYY");
+                }
+
+                [$anneeDeb, $anneeFin] = array_map('intval', explode('-', $annee, 2));
+                $data = $repo->getAllCandidats($anneeDeb, $anneeFin);
+            } else {
+                // Fallback: export global si aucune annee n'est fournie
+                $data = $repo->getAllCandidats();
+            }
 
             if ($data === null) {
                 throw new Exception('Erreur lors de la récupération des données');
@@ -25,4 +37,5 @@ class ExportController extends Controller {
             $this->json(['error' => $e->getMessage()], 500);
         }
     }
+
 }

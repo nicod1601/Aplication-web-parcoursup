@@ -1,7 +1,0 @@
-<?php
-require_once '../app/controllers/tableau/TableauController.php';
-
-if (session_status() === PHP_SESSION_NONE) session_start();
-
-$controller = new TableauController();
-$controller->tableau();

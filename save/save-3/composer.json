@@ -1,9 +1,0 @@
-{
-  "name": "mon-projet/app",
-  "description": "Application PHP",
-  "type": "project",
-  "require": {
-    "php": ">=8.0",
-    "twig/twig": "^3.0"
-  }
-}

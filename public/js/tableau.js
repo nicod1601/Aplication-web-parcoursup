@@ -1,6 +1,7 @@
 const anneeSelect= document.getElementById( 'annee-select' );
 
 const btnAnnee   = document.getElementById( 'btnAnnee'     );
+const btnMAJ = document.getElementById( 'btnMAJ' );
 
 const btnFiltrer = document.getElementById( 'btnFiltrer'   );
 const btnGrouper = document.getElementById( 'btnGrouper'   );
@@ -48,6 +49,12 @@ window.addEventListener( 'load', async () => {
 
 		if ( sessionStorage.getItem('btnExport-disabled') )
 			btnExport.disabled = JSON.parse(sessionStorage.getItem('btnExport-disabled'));
+
+		if ( sessionStorage.getItem('btnAnnee-disabled') )
+			btnAnnee.disabled = JSON.parse(sessionStorage.getItem('btnAnnee-disabled'));
+
+		if ( sessionStorage.getItem('btnMAJ-disabled') )
+			btnMAJ.disabled = JSON.parse(sessionStorage.getItem('btnMAJ-disabled'));
 	}
 	catch (error)
 	{
@@ -56,55 +63,9 @@ window.addEventListener( 'load', async () => {
 	}
 });
 
-btnAnnee.addEventListener( 'click', async  () => {
-	const annee = document.getElementById( 'annee-select' ).value;
+btnAnnee.addEventListener( 'click', recupererDonnees);
 
-	modeGrouper  = false;
-	groupeCache = null;
-	sessionStorage.removeItem('groupes_cache');
-
-	try
-	{
-		const reponse = await fetch(`/stats.php?annee=${encodeURIComponent(annee)}`, {
-			method: 'GET',
-			headers: {
-				'Authorization': `Bearer appli-secret-token`,
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if ( ! reponse.ok )
-			throw new Error(`Erreur lors du chargement des données`);
-
-		const data = await reponse.json();
-
-
-		sessionStorage.removeItem( 'statistiques' );
-		mettreAJourStats( data.statistiques );
-		sessionStorage.setItem( 'statistiques', JSON.stringify(data.statistiques) );
-
-		sessionStorage.removeItem( 'candidats' );
-		mettreAJourTab( data.candidats );
-		sessionStorage.setItem( 'candidats', JSON.stringify(data.candidats) );
-
-		sessionStorage.removeItem( 'btnFiltrer-disabled' );
-		btnFiltrer.disabled = false;
-		sessionStorage.setItem( 'btnFiltrer-disabled', JSON.stringify( btnFiltrer.disabled ) );
-
-		sessionStorage.removeItem( 'btnGrouper-disabled' );
-		btnGrouper.disabled = false;
-		sessionStorage.setItem( 'btnGrouper-disabled', JSON.stringify( btnGrouper.disabled ) )
-
-		sessionStorage.removeItem( 'btnExport-disabled' );
-		btnExport.disabled = false;
-		sessionStorage.setItem( 'btnExport-disabled', JSON.stringify( btnExport.disabled ) );
-	}
-	catch (error)
-	{
-		console.error('Erreur lors de l\'initialisation:', error);
-		alert('Impossible de se connecter au serveur. Assurez-vous que le backend est lancé sur http://localhost:8000');
-	}
-});
+btnMAJ.addEventListener( 'click', recupererDonnees );
 
 btnGrouper.addEventListener( 'click', () => {
 	window.location.href = `../groupe.php`;
@@ -113,6 +74,11 @@ btnGrouper.addEventListener( 'click', () => {
 btnFiltrer.addEventListener( 'click', () => {
 	window.location.href = `../filtrer.php`;
 })
+
+anneeSelect.addEventListener( 'change', () => {
+	btnAnnee.disabled = false;
+	btnMAJ.disabled = true;
+});
 
 function mettreAJourDate(data)
 {
@@ -227,7 +193,7 @@ function renderTable()
 			<td>${escapeHtml(c.noteglobale)}</td>
 			<td>${escapeHtml(c.noteficheavenir)}</td>
 			<td>${escapeHtml(c.notelycee)}</td>
-			<td>${escapeHtml(c.noteDossier)}</td>
+			<td>${escapeHtml(c.notedossier)}</td>
 			<td>${escapeHtml(c.commentaire)}</td>
 		`;
 
@@ -284,7 +250,9 @@ function escapeHtml(str) {
 document.getElementById('btnExporter').addEventListener('click', downloadExcel);
 
 async function downloadExcel() {
-	const response = await fetch('/export.php');
+	const annee = document.getElementById( 'annee-select' ).value;
+
+	const response = await fetch(`/export.php?annee=${encodeURIComponent(annee)}`);
 	const data = await response.json();
 
 	if (!response.ok) {
@@ -298,4 +266,62 @@ async function downloadExcel() {
 	const workbook = XLSX.utils.book_new();
 	XLSX.utils.book_append_sheet(workbook, worksheet, "Candidats");
 	XLSX.writeFile(workbook, "Export_Candidats.xlsx");
+}
+
+async function recupererDonnees()
+{
+	const annee = anneeSelect.value;
+
+	modeGrouper  = false;
+	groupeCache = null;
+	sessionStorage.removeItem('groupes_cache');
+
+	try
+	{
+		const reponse = await fetch(`/stats.php?annee=${encodeURIComponent(annee)}`, {
+			method: 'GET',
+			headers: {
+				'Authorization': `Bearer appli-secret-token`,
+				'Content-Type': 'application/json'
+			}
+		});
+
+		if ( ! reponse.ok )
+			throw new Error(`Erreur lors du chargement des données`);
+
+		const data = await reponse.json();
+
+		sessionStorage.removeItem( 'statistiques' );
+		mettreAJourStats( data.statistiques );
+		sessionStorage.setItem( 'statistiques', JSON.stringify(data.statistiques) );
+
+		sessionStorage.removeItem( 'candidats' );
+		mettreAJourTab( data.candidats );
+		sessionStorage.setItem( 'candidats', JSON.stringify(data.candidats) );
+
+		sessionStorage.removeItem( 'btnFiltrer-disabled' );
+		btnFiltrer.disabled = false;
+		sessionStorage.setItem( 'btnFiltrer-disabled', JSON.stringify( btnFiltrer.disabled ) );
+
+		sessionStorage.removeItem( 'btnGrouper-disabled' );
+		btnGrouper.disabled = false;
+		sessionStorage.setItem( 'btnGrouper-disabled', JSON.stringify( btnGrouper.disabled ) )
+
+		sessionStorage.removeItem( 'btnExport-disabled' );
+		btnExport.disabled = false;
+		sessionStorage.setItem( 'btnExport-disabled', JSON.stringify( btnExport.disabled ) );
+
+		sessionStorage.removeItem( 'btnAnnee-disabled' );
+		btnAnnee.disabled = true;
+		sessionStorage.setItem( 'btnAnnee-disabled', JSON.stringify( btnAnnee.disabled ) );
+
+		sessionStorage.removeItem( 'btnMAJ-disabled' );
+		btnMAJ.disabled = false;
+		sessionStorage.setItem( 'btnMAJ-disabled', JSON.stringify( btnMAJ.disabled ) );
+	}
+	catch (error)
+	{
+		console.error('Erreur lors de l\'initialisation:', error);
+		alert('Impossible de se connecter au serveur. Assurez-vous que le backend est lancé sur http://localhost:8000');
+	}
 }

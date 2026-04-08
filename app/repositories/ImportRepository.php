@@ -219,7 +219,7 @@ class ImportRepository
 					$idSpe = $speMap[$libSpe] ?: null;
 				}
 
-				// 7. Enseignement Spécialité
+				// 7. Enseignements de spécialité de terminale (combinaison, non abandonnés)
 				$combinaison   = trim($row['Combinaison des enseignements de spécialité en Terminale'] ?? '');
 				$abandonneeLib = trim($row['Enseignement De spécialité abandonné en Première'] ?? '');
 				$idsEnsSpe     = [];
@@ -229,22 +229,41 @@ class ImportRepository
 					$specialites = array_map('trim', $specialites);
 					$specialites = array_filter($specialites, fn($s) => !$this->estVide($s));
 
-					foreach ($specialites as $libSpe) {
-						if ($this->estVide($libSpe)) continue;
-						if (!isset($ensMap[$libSpe])) {
+					foreach ($specialites as $libEnsSpe) {
+						if ($this->estVide($libEnsSpe)) continue;
+						if (!isset($ensMap[$libEnsSpe])) {
 							$pdo->prepare("
 								INSERT INTO EnseignementSpecialite (libEnsSpe)
 								VALUES (:libEnsSpe)
 								ON CONFLICT DO NOTHING
-							")->execute([':libEnsSpe' => $libSpe]);
+							")->execute([':libEnsSpe' => $libEnsSpe]);
 							$s = $pdo->prepare("SELECT idEnsSpe FROM EnseignementSpecialite WHERE libEnsSpe = :libEnsSpe");
-							$s->execute([':libEnsSpe' => $libSpe]);
-							$ensMap[$libSpe] = (int)$s->fetchColumn();
+							$s->execute([':libEnsSpe' => $libEnsSpe]);
+							$ensMap[$libEnsSpe] = (int)$s->fetchColumn();
 						}
-						if ($ensMap[$libSpe]) {
-							$idsEnsSpe[] = $ensMap[$libSpe];
+						if ($ensMap[$libEnsSpe]) {
+							$idsEnsSpe[] = $ensMap[$libEnsSpe];
 						}
 					}
+				}
+
+				// 7b. Spécialité abandonnée en première (colonne dédiée)
+				// C'est une spécialité distincte de la combinaison terminale,
+				// il faut l'insérer séparément dans EnseignementSpecialite
+				$idEnsSpeAbandonnee = null;
+				if (!$this->estVide($abandonneeLib)) {
+					$libAban = trim($abandonneeLib);
+					if (!isset($ensMap[$libAban])) {
+						$pdo->prepare("
+							INSERT INTO EnseignementSpecialite (libEnsSpe)
+							VALUES (:libEnsSpe)
+							ON CONFLICT DO NOTHING
+						")->execute([':libEnsSpe' => $libAban]);
+						$s = $pdo->prepare("SELECT idEnsSpe FROM EnseignementSpecialite WHERE libEnsSpe = :libEnsSpe");
+						$s->execute([':libEnsSpe' => $libAban]);
+						$ensMap[$libAban] = (int)$s->fetchColumn();
+					}
+					$idEnsSpeAbandonnee = $ensMap[$libAban] ?: null;
 				}
 
 				// 8. Série Diplôme
@@ -307,23 +326,41 @@ class ImportRepository
 					':idSerieDip'      => $idSerieDip,
 					':idSpe'           => $idSpe,
 					':idEtab'          => $idEtab,
-					':idFichier' => $idFichier,
+					':idFichier'       => $idFichier,
 				]);
 
 				// 10. Candidat_EnseignementSpecialite
+
+				// Spécialités de terminale : toutes non abandonnées
 				foreach ($idsEnsSpe as $idEnsSpe) {
-					$estAbandonnee = false;
-					if (!$this->estVide($abandonneeLib)) {
-						$libCette = array_search($idEnsSpe, $ensMap);
-						if ($libCette !== false) {
-							$estAbandonnee = stripos($abandonneeLib, $libCette) !== false;
-						}
-					}
 					$stmtCandEnsSpecialite->execute([
 						':idCand'     => $currentCandId,
 						':idEnsSpe'   => $idEnsSpe,
-						':abandonnee' => (int)$estAbandonnee,
+						':abandonnee' => 0,
 					]);
+				}
+
+				// Spécialité abandonnée en première
+				if ($idEnsSpeAbandonnee) {
+					if (!in_array($idEnsSpeAbandonnee, $idsEnsSpe)) {
+						// Cas normal : la spécialité abandonnée n'est pas dans la combinaison terminale
+						$stmtCandEnsSpecialite->execute([
+							':idCand'     => $currentCandId,
+							':idEnsSpe'   => $idEnsSpeAbandonnee,
+							':abandonnee' => 1,
+						]);
+					} else {
+						// Cas rare : la spécialité abandonnée figure aussi dans la combinaison
+						// On met à jour le flag pour la marquer abandonnée
+						$pdo->prepare("
+							UPDATE Candidat_EnseignementSpecialite
+							SET abandonnee = true
+							WHERE idCand = :idCand AND idEnsSpe = :idEnsSpe
+						")->execute([
+							':idCand'   => $currentCandId,
+							':idEnsSpe' => $idEnsSpeAbandonnee,
+						]);
+					}
 				}
 
 				$lignesImportees++;
@@ -393,6 +430,7 @@ class ImportRepository
 
 		return $erreurs;
 	}
+
 	private function estVide($valeur): bool
 	{
 		if ($valeur === null || $valeur === false) return true;

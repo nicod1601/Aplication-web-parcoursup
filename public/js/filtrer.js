@@ -24,14 +24,6 @@ const TYPE_BAC_2 = `
     </div>
 `;
 
-const typeBacSelect       = document.getElementById( 'typeBac-select' );
-const civiliteSelect      = document.getElementById( 'civilite-select' );
-const bourseSelect        = document.getElementById( 'bourse-select' );
-const etablissementSelect = document.getElementById( 'etablissement-select' );
-const communeSelect       = document.getElementById( 'commune-select' );
-const departementSelect   = document.getElementById( 'departement-select' );
-const paysSelect          = document.getElementById( 'pays-select' );
-
 const btnAnnuler   = document.getElementById( 'btnAnnuler'   );
 const btnConfirmer = document.getElementById( 'btnConfirmer' );
 

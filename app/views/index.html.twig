@@ -1,83 +1,62 @@
 {% include '_template/header.html.twig' with {
 	title: title | default('MonProjet'),
-	project_name: project_name | default('MonProjet'),
+	project_name: project_name | default('ParcourSUPPORT'),
 	additional_css: 'index.css'
 } %}
 	<div id="session-data" data-username="{{ session.user_nom | default('Invité') }}" style="display:none;"></div>
 
-	<div class="welcome-banner">
-		<div class="welcome-content">
-			<h1>Bienvenue {{ session.user_nom | default('Utilisateur') }} {{ session.user_prenom | default('') }}</h1>
-			<p>Bienvenue sur MonProjet — plateforme de gestion et de visualisation des candidatures.</p>
+	<div class="dashboard-intro">
+		<div class="intro-text">
+			<span class="over-title">Tableau de bord</span>
+			<h1>Ravi de vous revoir, <span class="text-red">{{ session.user_nom | default('Utilisateur') }} {{ session.user_prenom | default('') }}</span>.</h1>
+			<p class="text-muted">Voici l'état actuel de votre base de données de candidatures.</p>
+		</div>
+		<div class="intro-date">
+			<i class="bi bi-calendar3"></i>
+			<span>{{ "now"|date("d F Y") }}</span>
 		</div>
 	</div>
 
-	<section>
-		<p class="section-label">Accès rapides</p>
-		<div class="ligne">
-
-			<a href="carte.php" class="card" style="text-decoration:none;">
-				<div class="card-header">
-					Carte
-					<div class="dots-group">
-						<div class="dot-header"></div>
-						<div class="dot-header red"></div>
-						<div class="dot-header"></div>
-					</div>
+	<section class="action-section">
+		<h2 class="section-title">Navigation rapide</h2>
+		<div class="action-grid">
+			<a href="carte.php" class="action-card">
+				<div class="action-icon bg-blue"><i class="bi bi-map"></i></div>
+				<div class="action-info">
+					<h3>Cartographie</h3>
+					<p>Analysez la provenance géographique des établissements.</p>
 				</div>
-				<div class="card-body">
-					<span class="card-icon">🗺️</span>
-					<span class="card-sub">Visualisation Map</span>
-				</div>
+				<i class="bi bi-arrow-right-short arrow"></i>
 			</a>
 
-			<a href="tableau.php" class="card" style="text-decoration:none;">
-				<div class="card-header">
-					Table
-					<div class="dots-group">
-						<div class="dot-header"></div>
-						<div class="dot-header red"></div>
-						<div class="dot-header"></div>
-					</div>
+			<a href="tableau.php" class="action-card">
+				<div class="action-icon bg-navy"><i class="bi bi-table"></i></div>
+				<div class="action-info">
+					<h3>Explorateur de données</h3>
+					<p>Consultez et filtrez la liste complète des candidats.</p>
 				</div>
-				<div class="card-body">
-					<span class="card-icon">📋</span>
-					<span class="card-sub">Liste des dossiers</span>
-				</div>
+				<i class="bi bi-arrow-right-short arrow"></i>
 			</a>
 
 			{% if session.is_admin %}
-				<a href="gestionnaire.php" class="card" style="text-decoration:none;">
-					<div class="card-header">
-						Gestionnaire
-						<div class="dots-group">
-							<div class="dot-header"></div>
-							<div class="dot-header red"></div>
-							<div class="dot-header"></div>
-						</div>
+				<a href="gestionnaire.php" class="action-card">
+					<div class="action-icon bg-red"><i class="bi bi-database-fill-gear"></i></div>
+					<div class="action-info">
+						<h3>Gestion des données</h3>
+						<p>Importez de nouveaux fichiers Excel et supprimez les données dans la base.</p>
 					</div>
-					<div class="card-body">
-						<span class="card-icon">📁</span>
-						<span class="card-sub">Gestion des données</span>
-					</div>
+					<i class="bi bi-arrow-right-short arrow"></i>
 				</a>
 
-				<a href="creation.php" class="card" style="text-decoration:none;">
-					<div class="card-header">
-						Création Compte
-						<div class="dots-group">
-							<div class="dot-header"></div>
-							<div class="dot-header red"></div>
-							<div class="dot-header"></div>
-						</div>
+				<a href="creation.php" class="action-card">
+					<div class="action-icon bg-muted"><i class="bi bi-person-plus-fill"></i></div>
+					<div class="action-info">
+						<h3>Administration</h3>
+						<p>Créez et gérez les comptes des collaborateurs.</p>
 					</div>
-					<div class="card-body">
-						<span class="card-icon">👤</span>
-						<span class="card-sub">Nouvel utilisateur</span>
-					</div>
+					<i class="bi bi-arrow-right-short arrow"></i>
 				</a>
 			{% endif %}
-
 		</div>
 	</section>
 

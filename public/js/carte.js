@@ -195,6 +195,7 @@ const PAYS_COORDS = {
 	'Royaume-Uni':        [55.38,  -3.44],
 	'États-Unis':         [37.09, -95.71],
 	'Canada':             [56.13,-106.35],
+	'Chine':              [35.86, 104.19],
 };
 
 async function geocoderParEtablissement(candidats) {
@@ -574,6 +575,7 @@ window.addEventListener('load', async () => {
 				opt.textContent = a.value;
 				select.appendChild(opt);
 			});
+			
 		}
 	} catch (err) {
 		console.error('Erreur init:', err);
