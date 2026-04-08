@@ -23,18 +23,61 @@ const traitementText      = document.getElementById('traitement');
 const loadingOverlay      = document.getElementById('loading-overlay');
 
 let allFichiers = typeof initialFichiers !== 'undefined' ? initialFichiers : [];
+const REQUIRED_HEADERS = [
+	"Candidat - Code",
+	"Candidat - Nom",
+	"Candidat - Prénom",
+	"Civilité",
+	"Profil Candidat - Libellé",
+	"Candidat boursier - Code",
+	"Nom Etablissement origine 2024/2025",
+	"Commune Etablissement origine - Libellé 2024/2025",
+	"Commune Etablissement origine - CodePostal 2024/2025",
+	"Département Etablissement origine - Libellé 2024/2025",
+	"Pays Etablissement origine - Libellé 2024/2025",
+	"Type Diplôme - Code",
+	"Type Diplôme - Libellé",
+	"Série Diplôme - Code",
+	"Série Diplôme - Libellé",
+	"Combinaison des enseignements de spécialité en Terminale",
+	"Enseignement De spécialité abandonné en Première",
+	"Note Globale Calculée",
+	"Note Fiche Avenir",
+	"Note Lycée calculée"
+];
 const LIMITE_LIGNES = 25;
 let excelData   = [];
 let currentPage = 1;
+
+// Données du fichier actuellement visualisé en mode "voir"
+let voirFichierId   = null;
+let voirCandidats   = [];
+let voirCurrentPage = 1;
+const VOIR_ROWS     = 25;
 
 renderTable([]);
 
 // ============================================================
 // CARTE INFORMATION — Mise à jour
 // ============================================================
-function mettreAJourInformation({ nomFichier = null, nbLignes = null, annee = null } = {}) {
+function mettreAJourInformation({ nomFichier = null, nbLignes = null, annee = null, nbFichiers = null } = {}) {
 	const el = document.getElementById('dossier-count');
 	if (!el) return;
+
+	if (nbFichiers !== null) {
+		el.innerHTML = `
+			<div class="info-card">
+				<div class="info-item">
+					<span class="info-icon info-icon--file">📂</span>
+					<div>
+						<div class="info-label">Base de données</div>
+						<div class="info-value">${nbFichiers} fichier${nbFichiers > 1 ? 's' : ''} enregistré${nbFichiers > 1 ? 's' : ''}</div>
+					</div>
+				</div>
+			</div>
+		`;
+		return;
+	}
 
 	if (nomFichier === null) {
 		el.innerHTML = `<span class="info-placeholder"></span>`;
@@ -74,7 +117,6 @@ function mettreAJourInformation({ nomFichier = null, nbLignes = null, annee = nu
 // DÉTECTION DE L'ANNÉE DANS LES EN-TÊTES
 // ============================================================
 function detecterAnnee(headers) {
-	// Cherche un pattern AAAA/AAAA ou AAAA-AAAA dans les colonnes
 	const patterns = [
 		/(\d{4}\/\d{4})/,
 		/(\d{4}-\d{4})/,
@@ -89,7 +131,6 @@ function detecterAnnee(headers) {
 	});
 
 	if (anneesTrouvees.size === 0) return null;
-	// Retourne la première année trouvée (normalisée avec tiret)
 	return [...anneesTrouvees][0].replace('/', '-');
 }
 
@@ -99,6 +140,15 @@ function detecterAnnee(headers) {
 fileInput.addEventListener('change', (e) => {
 	const file = e.target.files[0];
 	if (!file) return;
+
+	// Vérification de l'extension du fichier
+	const fileName = file.name.toLowerCase();
+	if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+		alert('Seuls les fichiers Excel (.xlsx, .xls) sont acceptés.');
+		fileInput.value = '';
+		mettreAJourInformation();
+		return;
+	}
 
 	const reader = new FileReader();
 
@@ -113,6 +163,22 @@ fileInput.addEventListener('change', (e) => {
 		const worksheet      = workbook.Sheets[firstSheetName];
 
 		excelData   = XLSX.utils.sheet_to_json(worksheet);
+
+		// Vérification des en-têtes obligatoires
+		if (excelData.length > 0) {
+			const headers = Object.keys(excelData[0]);
+			const missing = REQUIRED_HEADERS.filter(h => !headers.includes(h));
+			if (missing.length > 0) {
+				loadingOverlay.style.display = 'none';
+				alert("Le fichier Excel ne possède pas les colonnes requises :\n- " + missing.join('\n- '));
+				fileInput.value = '';
+				excelData = [];
+				updateTable();
+				mettreAJourInformation();
+				return;
+			}
+		}
+
 		currentPage = 1;
 		updateTable();
 
@@ -125,7 +191,7 @@ fileInput.addEventListener('change', (e) => {
 
 		if (annee) {
 			const anneeSelect = document.getElementById('annee-select');
-			const anneeNorm   = annee.replace('/', '-'); // "2024-2025"
+			const anneeNorm   = annee.replace('/', '-');
 			for (let i = 0; i < anneeSelect.options.length; i++) {
 				if (anneeSelect.options[i].value === anneeNorm) {
 					anneeSelect.selectedIndex = i;
@@ -134,7 +200,6 @@ fileInput.addEventListener('change', (e) => {
 			}
 		}
 
-		// Afficher le nom du fichier dans la zone drop
 		const fileNameEl = document.getElementById('file-name');
 		if (fileNameEl) fileNameEl.textContent = file.name;
 
@@ -150,7 +215,7 @@ fileInput.addEventListener('change', (e) => {
 });
 
 // ============================================================
-// RENDU DU TABLEAU
+// RENDU DU TABLEAU (import Excel)
 // ============================================================
 function renderTable(data) {
 	table.innerHTML = '';
@@ -208,7 +273,6 @@ function updateTable() {
 
 	const totalPages = Math.ceil(excelData.length / LIMITE_LIGNES) || 1;
 
-	// Bouton de confirmation
 	confirmBtnContainer.innerHTML = `
 		<button class="btn btn-primary" id="confirm-btn">
 			Confirmer l'importation (${excelData.length} lignes)
@@ -229,7 +293,7 @@ function updateTable() {
 }
 
 // ============================================================
-// PAGINATION
+// PAGINATION (import Excel)
 // ============================================================
 paginationBar.addEventListener('click', (e) => {
 	const totalPages = Math.ceil(excelData.length / LIMITE_LIGNES);
@@ -278,14 +342,48 @@ confirmBtnContainer.addEventListener('click', async (e) => {
 		});
 
 		const result = await response.json();
-		loadingOverlay.style.display = 'none';
 
 		if (result.success) {
+			// --- ANIMATION DE SUCCÈS ---
+			const spinner = loadingOverlay.querySelector('.spinner');
+			const loadingBox = loadingOverlay.querySelector('.loading-box');
+			
+			// On cache le spinner
+			if (spinner) spinner.style.display = 'none';
+			
+			// On crée et affiche le V vert
+			let check = loadingBox.querySelector('.success-checkmark');
+			if (!check) {
+				check = document.createElement('div');
+				check.className = 'success-checkmark';
+				check.innerHTML = '<i class="bi bi-check-lg"></i>';
+				loadingBox.prepend(check);
+			}
+			check.style.display = 'block';
+			traitementText.textContent = 'Enregistré avec succès !';
+
+			// Petit délai pour laisser l'utilisateur voir le "V"
+			await new Promise(resolve => setTimeout(resolve, 1500));
+
+			loadingOverlay.style.display = 'none';
 			afficherRapportImport(result);
+
+			// ── Mise à jour de la liste des fichiers après import ──
+			const anneeImportee = anneeSelect.value;
+			const nomFichierImporte = document.getElementById('file-name')?.textContent || `Import ${anneeImportee}`;
+
+			// Vérifie si ce fichier existe déjà dans allFichiers
+			const existe = allFichiers.some(f => f.annee === anneeImportee);
+			if (!existe) {
+				await rechargerListeFichiers();
+			}
+
+			sessionStorage.removeItem(`carte_${anneeImportee}`);
+
 			mettreAJourInformation({
-				nomFichier: document.getElementById('file-name')?.textContent || '',
+				nomFichier: nomFichierImporte,
 				nbLignes:   result.lignesImportees,
-				annee:      anneeSelect.value,
+				annee:      anneeImportee,
 			});
 		} else {
 			alert('Erreur : ' + result.error);
@@ -299,6 +397,21 @@ confirmBtnContainer.addEventListener('click', async (e) => {
 });
 
 // ============================================================
+// RECHARGEMENT DE LA LISTE DES FICHIERS (depuis le serveur)
+// ============================================================
+async function rechargerListeFichiers() {
+	try {
+		const res  = await fetch('/gestionnaire_data.php');
+		const data = await res.json();
+		if (data.success && Array.isArray(data.fichiers)) {
+			allFichiers = data.fichiers;
+		}
+	} catch (err) {
+		console.warn('Impossible de recharger la liste des fichiers :', err);
+	}
+}
+
+// ============================================================
 // RAPPORT D'IMPORT
 // ============================================================
 function afficherRapportImport(result) {
@@ -306,83 +419,22 @@ function afficherRapportImport(result) {
 	const nbImportees = result.lignesImportees ?? 0;
 	const nbFichier   = excelData.length;
 
-	let html = `
-		<div id="rapport-import" style="margin-top:1.5rem;">
-			<div style="
-				padding: 12px 16px;
-				background: var(--white);
-				border: 1.5px solid var(--navy);
-				border-radius: ${nbIgnorees > 0 ? '8px 8px 0 0' : '8px'};
-				display: flex;
-				align-items: center;
-				gap: 16px;
-				flex-wrap: wrap;
-			">
-				<span style="font-size:0.85rem;font-weight:600;">
-					✅ ${result.message}
-				</span>
-				<span style="font-size:0.8rem;color:var(--muted);">
-					Fichier : <strong>${nbFichier}</strong> lignes
-					&nbsp;|&nbsp;
-					Importées : <strong style="color:#3b6d11;">${nbImportees}</strong>
-					&nbsp;|&nbsp;
-					Ignorées : <strong style="color:${nbIgnorees > 0 ? 'var(--red)' : '#3b6d11'};">${nbIgnorees}</strong>
-				</span>
-			</div>
-	`;
+	let message = "";
+	let bgColor = "";
 
-	if (nbIgnorees > 0) {
-		html += `
-			<div style="
-				max-height: 320px;
-				overflow-y: auto;
-				border: 1.5px solid var(--navy);
-				border-top: none;
-				border-radius: 0 0 8px 8px;
-			">
-				<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
-					<thead>
-						<tr style="background:var(--blue-light);position:sticky;top:0;z-index:1;">
-							<th style="padding:8px 12px;text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--navy);">
-								Ligne Excel
-							</th>
-							<th style="padding:8px 12px;text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--navy);">
-								Candidat
-							</th>
-							<th style="padding:8px 12px;text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--navy);">
-								Raison(s)
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-		`;
-
-		result.lignesIgnorees.forEach((l, index) => {
-			const bgColor = index % 2 === 0 ? 'var(--white)' : 'var(--blue-sky)';
-			html += `
-				<tr style="border-bottom:1px solid var(--blue-light);background:${bgColor};">
-					<td style="padding:6px 12px;color:var(--muted);font-weight:600;">
-						${l.ligne}
-					</td>
-					<td style="padding:6px 12px;">
-						${escapeHtml(l.nom)}
-					</td>
-					<td style="padding:6px 12px;color:var(--red);">
-						${l.erreurs.map(e => `<span>• ${escapeHtml(e)}</span>`).join('<br>')}
-					</td>
-				</tr>
-			`;
-		});
-
-		html += `
-					</tbody>
-				</table>
-			</div>
-		`;
+	if (nbIgnorees === 0 && nbImportees === nbFichier) {
+		message = "✅ Importation réussie : toutes les lignes ont été importées.";
+		bgColor = "#d4edda"; // Vert succès
+	} else {
+		message = `⚠️ Attention : ${nbIgnorees} ligne(s) ont été ignorées sur ${nbFichier}. Le fichier n'est pas totalement conforme.`;
+		bgColor = "#f8d7da"; // Rouge erreur
 	}
 
-	html += `</div>`;
-
+	const html = `
+		<div id="rapport-import" style="margin-top:1.5rem; padding: 15px; border-radius: 8px; background-color: ${bgColor}; border: 1px solid var(--navy); font-weight: 600;">
+			${message}
+		</div>
+	`;
 	confirmBtnContainer.insertAdjacentHTML('afterend', html);
 }
 
@@ -407,47 +459,205 @@ function escapeHtml(str) {
 		.replace(/'/g,  '&#39;');
 }
 
+// ============================================================
+// RENDU DE LA LISTE DES FICHIERS
+// ============================================================
 function renderFileList(fichiers) {
 	const container = document.getElementById('liste-fichiers-container');
 	if (!container) return;
 
 	if (!fichiers || fichiers.length === 0) {
-		container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted);">Aucun fichier dans la base de données.</div>`;
+		container.innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted);">Aucun fichier dans la base de données.</div>`;
 		return;
 	}
 
 	container.innerHTML = fichiers.map(f => `
-		<div class="file-list-item">
+		<div class="file-list-item" data-id="${f.id}">
 			<div class="file-info">
 				<span class="file-name">${escapeHtml(f.nom)}</span>
 				<span class="file-year">${f.annee}</span>
 			</div>
 			<div class="file-actions">
-				<button class="btn-text" id="voir-${f.id}">voir</button>
+				<button class="btn-text btn-voir" data-id="${f.id}" data-nom="${escapeHtml(f.nom)}" data-annee="${escapeHtml(f.annee)}">👁️</button>
 				<span>|</span>
-				<button class="btn-text btn-text-danger" id="supr-${f.id}">supr</button>
+				<button class="btn-text btn-text-danger btn-supr" data-id="${f.id}">🗑️</button>
 			</div>
 		</div>
 	`).join('');
-	
 }
 
-const btnVoir = document.getElementById('liste-fichiers-container');
-btnVoir.addEventListener('click', (e) => {
+// ============================================================
+// ZONE "VOIR" — Tableau des candidats d'un fichier
+// ============================================================
+function afficherZoneVoir(idFichier, nomFichier, annee) {
+	// Masque la liste, affiche la zone tableau
+	document.getElementById('zone-liste-fichiers').style.display = 'none';
 
-});
+	let zoneVoir = document.getElementById('zone-voir');
+	if (!zoneVoir) {
+		zoneVoir = document.createElement('section');
+		zoneVoir.id        = 'zone-voir';
+		zoneVoir.className = 'page-body';
+		document.querySelector('.main-content').appendChild(zoneVoir);
+	}
+	zoneVoir.style.display = 'block';
 
-const btnSupprimerFichier = document.getElementById('liste-fichiers-container');
-btnSupprimerFichier.addEventListener('click', (e) => {
-	if (e.target.classList.contains('btn-text-danger')) {
-		const idFichier = e.target.id.split('-')[1];
-		supprimerFichier(idFichier);
+	zoneVoir.innerHTML = `
+		<div class="hero-sub" style="margin-bottom:1rem;">
+			<button class="btn btn-secondary" id="btn-retour-liste" style="font-size:0.75rem;padding:4px 12px;">
+				← Retour
+			</button>
+			<span style="margin-left:12px;">
+				${escapeHtml(nomFichier)} — Année ${escapeHtml(annee)}
+			</span>
+		</div>
+
+		<div class="content-placeholder" style="overflow-x:auto;max-height:520px;border:1px solid #d4ddf7;">
+			<table id="voir-table" class="table table-striped" style="width:100%;border-collapse:collapse;font-size:12px;">
+				<thead>
+					<tr id="voir-thead"></tr>
+				</thead>
+				<tbody id="voir-tbody">
+					<tr><td colspan="15" style="text-align:center;padding:30px;color:gray;">Chargement...</td></tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="pagination-bar" id="voir-pagination" style="margin-top:1.5rem;"></div>
+	`;
+
+	document.getElementById('btn-retour-liste').addEventListener('click', () => {
+		zoneVoir.style.display = 'none';
+		document.getElementById('zone-liste-fichiers').style.display = 'block';
+	});
+
+	voirFichierId   = idFichier;
+	voirCurrentPage = 1;
+	chargerCandidatsFichier(idFichier);
+}
+
+async function chargerCandidatsFichier(idFichier) {
+	try {
+		const res  = await fetch(`/gestionnaire_candidats.php?id=${idFichier}`);
+		const data = await res.json();
+
+		if (!data.success) {
+			document.getElementById('voir-tbody').innerHTML = `
+				<tr><td colspan="15" style="text-align:center;padding:30px;color:var(--red);">
+					Erreur : ${escapeHtml(data.error || 'Impossible de charger les données')}
+				</td></tr>
+			`;
+			return;
+		}
+
+		voirCandidats = data.candidats || [];
+		renderVoirTable();
+
+	} catch (err) {
+		console.error('Erreur chargement candidats :', err);
+		document.getElementById('voir-tbody').innerHTML = `
+			<tr><td colspan="15" style="text-align:center;padding:30px;color:var(--red);">
+				Erreur de connexion au serveur.
+			</td></tr>
+		`;
+	}
+}
+
+function renderVoirTable() {
+	const thead = document.getElementById('voir-thead');
+	const tbody = document.getElementById('voir-tbody');
+	if (!thead || !tbody) return;
+
+	const colonnes = [
+		{ key: 'codecand',       label: 'Code' },
+		{ key: 'nomcand',        label: 'Nom' },
+		{ key: 'prenomcand',     label: 'Prénom' },
+		{ key: 'civilite',       label: 'Civilité' },
+		{ key: 'profilcand',     label: 'Profil' },
+		{ key: 'nvbourscand',    label: 'Bourse' },
+		{ key: 'codeseriedip',   label: 'Série' },
+		{ key: 'libseriedip',    label: 'Libellé série' },
+		{ key: 'nometab',        label: 'Établissement' },
+		{ key: 'nomcommu',       label: 'Commune' },
+		{ key: 'nomdept',        label: 'Département' },
+		{ key: 'noteglobale',    label: 'Note globale' },
+		{ key: 'noteficheavenir',label: 'Fiche avenir' },
+		{ key: 'notelycee',      label: 'Note lycée' },
+		{ key: 'notedossier',    label: 'Dossier' },
+	];
+
+	// En-tête (une seule fois)
+	if (!thead.hasChildNodes()) {
+		const thStyle = 'padding:9px 12px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#185FA5;background:#E6F1FB;white-space:nowrap;border:1px solid #c5d8f5;';
+		thead.innerHTML = colonnes.map(c => `<th style="${thStyle}">${c.label}</th>`).join('');
+	}
+
+	if (voirCandidats.length === 0) {
+		tbody.innerHTML = `<tr><td colspan="${colonnes.length}" style="text-align:center;padding:30px;color:gray;">Aucun candidat dans ce fichier.</td></tr>`;
+		renderVoirPagination();
+		return;
+	}
+
+	const start    = (voirCurrentPage - 1) * VOIR_ROWS;
+	const pageData = voirCandidats.slice(start, start + VOIR_ROWS);
+	const tdStyle  = 'padding:7px 12px;border:1px solid #e8eef8;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;';
+
+	tbody.innerHTML = pageData.map(c => `
+		<tr>
+			${colonnes.map(col => `<td style="${tdStyle}">${escapeHtml(String(c[col.key] ?? ''))}</td>`).join('')}
+		</tr>
+	`).join('');
+
+	renderVoirPagination();
+}
+
+function renderVoirPagination() {
+	const bar        = document.getElementById('voir-pagination');
+	if (!bar) return;
+	const totalPages = Math.ceil(voirCandidats.length / VOIR_ROWS) || 1;
+
+	bar.innerHTML = `
+		<button class="btn btn-secondary" id="voir-prev" ${voirCurrentPage === 1 ? 'disabled' : ''}>← Précédent</button>
+		<span style="font-size:0.85rem;color:var(--muted);margin:0 15px;">
+			Page ${voirCurrentPage} / ${totalPages} — ${voirCandidats.length} candidat(s)
+		</span>
+		<button class="btn btn-secondary" id="voir-next" ${voirCurrentPage >= totalPages ? 'disabled' : ''}>Suivant →</button>
+	`;
+
+	document.getElementById('voir-prev').onclick = () => {
+		if (voirCurrentPage > 1) { voirCurrentPage--; renderVoirTable(); }
+	};
+	document.getElementById('voir-next').onclick = () => {
+		if (voirCurrentPage < totalPages) { voirCurrentPage++; renderVoirTable(); }
+	};
+}
+
+// ============================================================
+// DÉLÉGATION D'ÉVÉNEMENTS — Liste des fichiers
+// ============================================================
+const listeFichiersContainer = document.getElementById('liste-fichiers-container');
+
+listeFichiersContainer.addEventListener('click', (e) => {
+	// Bouton "voir"
+	if (e.target.classList.contains('btn-voir')) {
+		const id    = e.target.dataset.id;
+		const nom   = e.target.dataset.nom;
+		const annee = e.target.dataset.annee;
+		afficherZoneVoir(id, nom, annee);
+		return;
+	}
+
+	// Bouton "supr"
+	if (e.target.classList.contains('btn-supr')) {
+		const id = e.target.dataset.id;
+		supprimerFichier(id);
 	}
 });
 
+// ============================================================
+// SUPPRIMER TOUT
+// ============================================================
 const btnsupprimerTout = document.getElementById('delete-all-btn');
 btnsupprimerTout.addEventListener('click', supprimerTout);
-
 
 async function supprimerTout() {
 	if (!confirm('⚠️ ATTENTION — Supprimer TOUS les candidats et fichiers de la base de données ?\n\nCette action est irréversible.')) return;
@@ -457,14 +667,19 @@ async function supprimerTout() {
 	traitementText.textContent   = 'Suppression totale en cours...';
 
 	try {
-		const res = await fetch('/delete.php?action=all', { method: 'POST' });
+		const res  = await fetch('/delete.php?action=all', { method: 'POST' });
 		const data = await res.json();
 		loadingOverlay.style.display = 'none';
 
 		if (data.success) {
+			// Nettoyer tout le cache de la carte car tout est supprimé
+			Object.keys(sessionStorage).forEach(key => {
+				if (key.startsWith('carte_')) sessionStorage.removeItem(key);
+			});
+
 			allFichiers = [];
 			renderFileList(allFichiers);
-			mettreAJourInformation({});
+			mettreAJourInformation({ nbFichiers: 0 });
 			alert('✅ Base de données vidée avec succès.');
 		} else {
 			alert('Erreur : ' + data.error);
@@ -477,24 +692,31 @@ async function supprimerTout() {
 
 async function supprimerFichier(idFichier) {
 	const id = parseInt(idFichier);
-	
+
 	if (!confirm('⚠️ Supprimer ce fichier et tous les candidats associés ?\n\nCette action est irréversible.')) return;
-	
+
 	loadingOverlay.style.display = 'flex';
 	traitementText.textContent   = 'Suppression en cours...';
-	
+
 	try {
-		const res = await fetch(`/delete.php?action=one`, {
+		const res  = await fetch(`/delete.php?action=one`, {
 			method:  'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body:    JSON.stringify({ id: id }),  // ← manquait dans ton code
+			body:    JSON.stringify({ id }),
 		});
 		const data = await res.json();
 		loadingOverlay.style.display = 'none';
-		
+
 		if (data.success) {
-			allFichiers = allFichiers.filter(f => parseInt(f.id) !== id);  // ← comparaison typée
+			// Trouver l'année du fichier supprimé pour vider son cache spécifique
+			const fichierSupprime = allFichiers.find(f => parseInt(f.id) === id);
+			if (fichierSupprime) {
+				sessionStorage.removeItem(`carte_${fichierSupprime.annee}`);
+			}
+
+			allFichiers = allFichiers.filter(f => parseInt(f.id) !== id);
 			renderFileList(allFichiers);
+			mettreAJourInformation({ nbFichiers: allFichiers.length });
 			alert('✅ Fichier supprimé avec succès.');
 		} else {
 			alert('Erreur : ' + data.error);
@@ -505,11 +727,10 @@ async function supprimerFichier(idFichier) {
 	}
 }
 
-
 // ============================================================
-// INITIALISATION - DES - PARTIES 
+// INITIALISATION DES PARTIES
 // ============================================================
-const btnImporter = document.getElementById('import-btn');
+const btnImporter  = document.getElementById('import-btn');
 const btnSupprimer = document.getElementById('delete-btn');
 
 const zoneFichier = document.getElementById('zone-fichier');
@@ -517,21 +738,42 @@ const zoneTableau = document.getElementById('zone-tableau');
 const zoneListe   = document.getElementById('zone-liste-fichiers');
 
 btnImporter.addEventListener('click', () => {
-
 	zoneFichier.style.display = 'block';
 	zoneTableau.style.display = 'block';
-	zoneListe.style.display = 'none';
+	zoneListe.style.display   = 'none';
+	const zoneVoir = document.getElementById('zone-voir');
+	if (zoneVoir) zoneVoir.style.display = 'none';
 	btnSupprimer.classList.replace('btn-primary', 'btn-secondary');
 	btnImporter.classList.replace('btn-secondary', 'btn-primary');
-	
+
+	// Restaurer l'affichage des infos du fichier en cours d'import ou vider la carte
+	if (excelData && excelData.length > 0) {
+		const headers = Object.keys(excelData[0]);
+		mettreAJourInformation({
+			nomFichier: fileInput.files[0]?.name || "Fichier importé",
+			nbLignes: excelData.length,
+			annee: detecterAnnee(headers)
+		});
+	} else {
+		mettreAJourInformation();
+	}
 });
 
-btnSupprimer.addEventListener('click', () => {
+btnSupprimer.addEventListener('click', async () => {
 	zoneFichier.style.display = 'none';
 	zoneTableau.style.display = 'none';
-	zoneListe.style.display = 'block';
+	zoneListe.style.display   = 'block';
+	const zoneVoir = document.getElementById('zone-voir');
+	if (zoneVoir) zoneVoir.style.display = 'none';
 	btnImporter.classList.replace('btn-primary', 'btn-secondary');
 	btnSupprimer.classList.replace('btn-secondary', 'btn-primary');
 
+	// Rechargement frais des fichiers depuis la BDD
+	loadingOverlay.style.display = 'flex';
+	traitementText.textContent   = 'Chargement des fichiers...';
+	await rechargerListeFichiers();
+	loadingOverlay.style.display = 'none';
+
 	renderFileList(allFichiers);
+	mettreAJourInformation({ nbFichiers: allFichiers.length });
 });

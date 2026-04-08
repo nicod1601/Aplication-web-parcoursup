@@ -100,4 +100,25 @@ class DonneesService
 
         return $data;
     }
+
+    public function getSeriesDiplomeFromAnnee($anneeDeb, $anneeFin): ?array
+    {
+        return $this->serieDiplomeRepository->getCodeSeriesDiplomesFromAnnee($anneeDeb, $anneeFin);
+    }
+
+    public function getCandidatsFromCodeSerieDip($codeSerieDip): ?array
+    {
+        $anneeDeb = $_SESSION['anneeCourante']['anneeDeb'];
+        $anneeFin = $_SESSION['anneeCourante']['anneeFin'];
+
+        return $this->candidatRepository->getCandidatsFromCodeSerieDip($codeSerieDip, $anneeDeb, $anneeFin);
+    }
+
+    public function updateNoteDossierFromCodeSerieDip($note, $codeSerieDip)
+    {
+        $anneeDeb = $_SESSION['anneeCourante']['anneeDeb'];
+        $anneeFin = $_SESSION['anneeCourante']['anneeFin'];
+
+        $this->candidatRepository->updateNoteDossierFromCodeSerieDip($note, $codeSerieDip, $anneeDeb, $anneeFin);
+    }
 }

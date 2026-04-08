@@ -29,7 +29,8 @@ class CarteRepository
 				l.nomCommu,
 				l.nomDept,
 				l.pays,
-				e.codePost
+				e.codePost,
+				e.nomEtab
 			FROM Candidat c
 			JOIN SerieDiplome sd ON c.idSerieDip = sd.idSerieDip
 			JOIN Etablissement e ON c.idEtab = e.idEtab

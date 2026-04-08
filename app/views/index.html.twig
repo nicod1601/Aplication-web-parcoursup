@@ -46,67 +46,38 @@
 				</div>
 			</a>
 
-			<a href="gestionnaire.php" class="card" style="text-decoration:none;">
-				<div class="card-header">
-					Gestionnaire
-					<div class="dots-group">
-						<div class="dot-header"></div>
-						<div class="dot-header red"></div>
-						<div class="dot-header"></div>
-					</div>
-				</div>
-				<div class="card-body">
-					<span class="card-icon">📁</span>
-					<span class="card-sub">Gestion des données</span>
-				</div>
-			</a>
-
-			<a href="creation.php" class="card" style="text-decoration:none;">
-				<div class="card-header">
-					Création Compte
-					<div class="dots-group">
-						<div class="dot-header"></div>
-						<div class="dot-header red"></div>
-						<div class="dot-header"></div>
-					</div>
-				</div>
-				<div class="card-body">
-					<span class="card-icon">👤</span>
-					<span class="card-sub">Nouvel utilisateur</span>
-				</div>
-			</a>
-
-		</div>
-	</section>
-
-	<section>
-		<p class="section-label">Notifications récentes</p>
-		<div class="notifs">
-			{% if notifications is defined and notifications is not empty %}
-				{% for notif in notifications %}
-					<div class="notif-card">
-						<div class="notif-dot {{ notif.type }}"></div>
-						<div class="notif-body">
-							<p>{{ notif.message }}</p>
-							<span>{{ notif.date }}</span>
+			{% if session.is_admin %}
+				<a href="gestionnaire.php" class="card" style="text-decoration:none;">
+					<div class="card-header">
+						Gestionnaire
+						<div class="dots-group">
+							<div class="dot-header"></div>
+							<div class="dot-header red"></div>
+							<div class="dot-header"></div>
 						</div>
-						<span class="notif-badge {{ notif.type }}">
-							{% if notif.type == 'urgent' %}Urgent
-							{% elseif notif.type == 'info' %}Info
-							{% elseif notif.type == 'success' %}Succès
-							{% endif %}
-						</span>
 					</div>
-				{% endfor %}
-			{% else %}
-				<div class="notif-card">
-					<div class="notif-dot info"></div>
-					<div class="notif-body">
-						<p>Aucune notification pour le moment.</p>
-						<span>—</span>
+					<div class="card-body">
+						<span class="card-icon">📁</span>
+						<span class="card-sub">Gestion des données</span>
 					</div>
-				</div>
+				</a>
+
+				<a href="creation.php" class="card" style="text-decoration:none;">
+					<div class="card-header">
+						Création Compte
+						<div class="dots-group">
+							<div class="dot-header"></div>
+							<div class="dot-header red"></div>
+							<div class="dot-header"></div>
+						</div>
+					</div>
+					<div class="card-body">
+						<span class="card-icon">👤</span>
+						<span class="card-sub">Nouvel utilisateur</span>
+					</div>
+				</a>
 			{% endif %}
+
 		</div>
 	</section>
 

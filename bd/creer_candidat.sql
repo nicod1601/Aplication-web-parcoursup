@@ -17,7 +17,7 @@ drop table if exists Specialite                      cascade;
 drop table if exists EnseignementSpecialite          cascade;
 drop table if exists Etablissement                   cascade;
 drop table if exists Localisation                    cascade;
-drop table if exists Fichier                        cascade;
+drop table if exists Fichier                         cascade;
 
 
 -- Création de la table Localisation
